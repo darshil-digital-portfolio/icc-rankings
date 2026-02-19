@@ -1,0 +1,28 @@
+# ── Builder stage ──────────────────────────────────────────────────────────────
+FROM rust:1.80-slim AS builder
+
+WORKDIR /app
+
+# Cache dependencies
+COPY Cargo.toml Cargo.lock* ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release && rm -rf src
+
+# Build the actual application
+COPY src ./src
+RUN touch src/main.rs && cargo build --release
+
+# ── Runtime stage ──────────────────────────────────────────────────────────────
+FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /app/target/release/api ./api
+
+EXPOSE 7429
+ENV RUST_LOG=info
+
+CMD ["./api"]

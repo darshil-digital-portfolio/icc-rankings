@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: icc_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: icc_ranking
+    ports:
+      - "47017:27017"          # host:47017 → container:27017 (default mongo port inside container)
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Rust API ────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: ../../docker/Dockerfile.api
+    container_name: icc_api
+    restart: unless-stopped
+    ports:
+      - "7429:7429"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017   # internal Docker network uses container port
+      MONGODB_DB: icc_ranking
+      API_HOST: 0.0.0.0
+      API_PORT: 7429
+      RUST_LOG: info
+      SEED_ON_STARTUP: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # ── Next.js Web ─────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: ../../docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: http://api:7429
+    container_name: icc_web
+    restart: unless-stopped
+    ports:
+      - "5237:5237"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:7429
+      PORT: 5237
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:

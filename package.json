@@ -1,0 +1,22 @@
+{
+  "name": "icc-ranking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ICC team progress tracking and ranking visualisation platform",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "cd apps/api && cargo run",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:api": "cd apps/api && cargo build --release",
+    "lint:web": "npm run lint --workspace=apps/web",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
