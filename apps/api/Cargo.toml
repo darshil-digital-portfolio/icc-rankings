@@ -19,7 +19,7 @@ tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"]
 tokio = { version = "1", features = ["full"] }
 
 # ─── Database ────────────────────────────────────────────────────────────────
-mongodb = { version = "3", features = ["tokio-runtime"] }
+mongodb = "3"
 bson = { version = "2", features = ["chrono-0_4"] }
 
 # ─── Serialisation ───────────────────────────────────────────────────────────

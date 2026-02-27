@@ -149,12 +149,13 @@ pub async fn get_rankings(
         .unwrap_or_default();
 
     let mut entries: Vec<RankingEntry> = Vec::with_capacity(data_arr.len());
+    let empty_doc = Document::new();
     for (i, bson_val) in data_arr.iter().enumerate() {
         let doc = match bson_val.as_document() {
             Some(d) => d,
             None => continue,
         };
-        let team = doc.get_document("team").unwrap_or(&Document::new());
+        let team = doc.get_document("team").unwrap_or(&empty_doc);
 
         let entry = RankingEntry {
             rank: params.offset + i as u32 + 1,

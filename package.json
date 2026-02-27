@@ -12,7 +12,7 @@
     "build:web": "npm run build --workspace=apps/web",
     "build:api": "cd apps/api && cargo build --release",
     "lint:web": "npm run lint --workspace=apps/web",
-    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d mongo",
     "docker:down": "docker compose -f docker/docker-compose.yml down"
   },
   "engines": {
