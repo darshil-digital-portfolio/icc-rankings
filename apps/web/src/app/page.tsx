@@ -33,7 +33,7 @@ export default async function HomePage() {
               ICC Team Rankings
             </h1>
             <p className="mt-5 text-lg text-pitch-200">
-              The definitive leaderboard of every nation's accumulated ICC points
+              The definitive leaderboard of every nation&apos;s accumulated ICC points
               across all formats — World Cup, T20, Test Championship, Champions Trophy,
               and age-group tournaments.
             </p>
@@ -175,7 +175,7 @@ export default async function HomePage() {
               Points = Stage Base × Event Multiplier
             </p>
             <p className="mt-1 text-sm text-pitch-600">
-              Example: Champion (5) at Men's World Cup (8×) = <strong>40 points</strong>
+              Example: Champion (5) at Men&apos;s World Cup (8×) = <strong>40 points</strong>
             </p>
           </div>
         </section>

@@ -59,7 +59,7 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 
 // ─── Rankings ─────────────────────────────────────────────────────────────────
 
-export interface GetRankingsParams {
+export interface GetRankingsParams extends Record<string, string | number | undefined> {
   event_type?: string;
   limit?: number;
   offset?: number;
@@ -81,7 +81,7 @@ export async function getTeamBreakdown(
 
 // ─── Teams ────────────────────────────────────────────────────────────────────
 
-export interface GetTeamsParams {
+export interface GetTeamsParams extends Record<string, string | number | undefined> {
   q?: string;
   limit?: number;
   offset?: number;
@@ -99,7 +99,7 @@ export async function getTeam(slug: string): Promise<TeamDetailResponse> {
 
 // ─── Events ───────────────────────────────────────────────────────────────────
 
-export interface GetEventsParams {
+export interface GetEventsParams extends Record<string, string | number | undefined> {
   event_type?: string;
   year?: number;
   limit?: number;

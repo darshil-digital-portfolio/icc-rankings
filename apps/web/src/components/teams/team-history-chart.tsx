@@ -140,7 +140,6 @@ export function TeamHistoryChart({ history }: TeamHistoryChartProps) {
             dataKey="total_points"
             stroke="#7e22ce"
             strokeWidth={2}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             dot={(props: any) => (
               <CustomDot
                 key={`dot-${props.index}`}

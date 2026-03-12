@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { getRankings } from "@/lib/api";
+import { getRankings, getTeam } from "@/lib/api";
 import { RankingsTable } from "@/components/rankings/rankings-table";
-import { RankingsChart } from "@/components/rankings/rankings-chart";
+import { RankingsLineChart } from "@/components/rankings/rankings-line-chart";
 import { EventTypeFilter } from "@/components/rankings/event-type-filter";
 
 export const metadata: Metadata = {
@@ -14,6 +14,9 @@ interface PageProps {
   searchParams: Promise<{ event_type?: string }>;
 }
 
+// Top N teams to include in the line chart — keep ≤ 10 for readability
+const CHART_TEAMS = 8;
+
 export default async function RankingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const eventType = params.event_type;
@@ -22,6 +25,10 @@ export default async function RankingsPage({ searchParams }: PageProps) {
     event_type: eventType,
     limit: 50,
   });
+
+  // Fetch full history for the top CHART_TEAMS teams in parallel
+  const topSlugs = response.data.slice(0, CHART_TEAMS).map((r) => r.team_slug);
+  const teamDetails = await Promise.all(topSlugs.map((slug) => getTeam(slug)));
 
   return (
     <div className="container-page py-10">
@@ -83,13 +90,13 @@ export default async function RankingsPage({ searchParams }: PageProps) {
       </p>
 
       <div className="space-y-6">
-        {/* Table */}
-        <RankingsTable data={response.data} />
-
-        {/* Chart */}
-        {response.data.length > 0 && (
-          <RankingsChart data={response.data} limit={15} />
+        {/* Line chart — cumulative points over time for top teams */}
+        {teamDetails.length > 0 && (
+          <RankingsLineChart teams={teamDetails} eventType={eventType} />
         )}
+
+        {/* Rankings table */}
+        <RankingsTable data={response.data} />
       </div>
     </div>
   );
