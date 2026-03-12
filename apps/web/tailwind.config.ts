@@ -10,19 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ICC-inspired palette
+        // Royal purple — replaces the old green "pitch" palette
         pitch: {
-          50:  "#f0fdf6",
-          100: "#dcfcea",
-          200: "#bbf7d4",
-          300: "#86efb4",
-          400: "#4ade84",
-          500: "#22c566",
-          600: "#16a34a",
-          700: "#15803d",
-          800: "#166534",
-          900: "#14532d",
-          950: "#052e16",
+          50:  "#faf5ff",
+          100: "#f3e8ff",
+          200: "#e9d5ff",
+          300: "#d8b4fe",
+          400: "#c084fc",
+          500: "#a855f7",
+          600: "#9333ea",
+          700: "#7e22ce",
+          800: "#6b21a8",
+          900: "#581c87",
+          950: "#3b0764",
         },
         gold: {
           50:  "#fefce8",
@@ -46,20 +46,20 @@ const config: Config = {
         mono: ["var(--font-mono)", "monospace"],
       },
       backgroundImage: {
-        "pitch-gradient": "linear-gradient(135deg, #052e16 0%, #14532d 50%, #15803d 100%)",
-        "gold-gradient": "linear-gradient(135deg, #713f12 0%, #a16207 50%, #d4af37 100%)",
+        "pitch-gradient": "linear-gradient(135deg, #3b0764 0%, #581c87 50%, #7e22ce 100%)",
+        "gold-gradient":  "linear-gradient(135deg, #713f12 0%, #a16207 50%, #d4af37 100%)",
       },
       animation: {
-        "fade-in": "fadeIn 0.3s ease-in-out",
+        "fade-in":  "fadeIn 0.3s ease-in-out",
         "slide-up": "slideUp 0.4s ease-out",
       },
       keyframes: {
         fadeIn: {
-          "0%": { opacity: "0" },
+          "0%":   { opacity: "0" },
           "100%": { opacity: "1" },
         },
         slideUp: {
-          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "0%":   { opacity: "0", transform: "translateY(16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },

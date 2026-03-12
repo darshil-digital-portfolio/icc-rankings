@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -17,9 +16,40 @@ interface TeamHistoryChartProps {
   history: EventHistoryEntry[];
 }
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ChartEntry = EventHistoryEntry & { idx: number };
+
 interface TooltipPayload {
-  payload: EventHistoryEntry;
+  payload: ChartEntry;
 }
+
+// ─── Custom dot — each dot coloured by event type ─────────────────────────────
+
+function CustomDot({
+  cx,
+  cy,
+  payload,
+}: {
+  cx?: number;
+  cy?: number;
+  payload?: ChartEntry;
+}) {
+  if (cx === undefined || cy === undefined || !payload) return <g />;
+  const fill = EVENT_TYPE_CHART_COLORS[payload.event_type as EventType] ?? "#7e22ce";
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={5}
+      fill={fill}
+      stroke="white"
+      strokeWidth={2}
+    />
+  );
+}
+
+// ─── Tooltip ──────────────────────────────────────────────────────────────────
 
 function CustomTooltip({
   active,
@@ -30,13 +60,20 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   const h = payload[0]!.payload;
+  const dotColor = EVENT_TYPE_CHART_COLORS[h.event_type as EventType] ?? "#7e22ce";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-lg max-w-[220px]">
-      <p className="font-semibold text-slate-800 text-sm">{h.event_short_name}</p>
-      <p className="text-xs text-slate-500">{h.year} · {h.event_type_label}</p>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="font-mono text-base font-bold text-pitch-700">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xl max-w-[240px]">
+      <div className="flex items-center gap-2">
+        <span
+          className="h-2.5 w-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: dotColor }}
+        />
+        <p className="font-semibold text-slate-800 text-sm">{h.event_short_name}</p>
+      </div>
+      <p className="mt-0.5 text-xs text-slate-500">{h.year} · {h.event_type_label}</p>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="font-mono text-lg font-bold text-pitch-700">
           {h.total_points} pts
         </span>
         <span className="text-xs text-slate-400">
@@ -48,34 +85,73 @@ function CustomTooltip({
   );
 }
 
+// ─── Main chart ───────────────────────────────────────────────────────────────
+
 export function TeamHistoryChart({ history }: TeamHistoryChartProps) {
+  // Sort chronologically; stable sort by event name within same year
+  const chartData: ChartEntry[] = [...history]
+    .sort((a, b) =>
+      a.year !== b.year
+        ? a.year - b.year
+        : a.event_short_name.localeCompare(b.event_short_name),
+    )
+    .map((h, i) => ({ ...h, idx: i }));
+
+  // Unique years for readable x-axis ticks
+  const seenYears = new Set<number>();
+  const yearTicks = chartData
+    .filter((d) => {
+      if (seenYears.has(d.year)) return false;
+      seenYears.add(d.year);
+      return true;
+    })
+    .map((d) => d.idx);
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-slate-500">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-500">
         Points per Tournament
       </h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={history} margin={{ top: 4, right: 8, left: 8, bottom: 48 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+      <p className="mb-4 text-xs text-slate-400">
+        Dot colour indicates the tournament format
+      </p>
+
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
           <XAxis
-            dataKey="event_short_name"
-            tick={{ fontSize: 10, fill: "#64748b" }}
-            angle={-45}
-            textAnchor="end"
+            dataKey="idx"
+            ticks={yearTicks}
+            tickFormatter={(i: number) => String(chartData[i]?.year ?? "")}
+            tick={{ fontSize: 11, fill: "#64748b" }}
+            axisLine={false}
+            tickLine={false}
             interval={0}
-            height={64}
           />
-          <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc" }} />
-          <Bar dataKey="total_points" radius={[3, 3, 0, 0]}>
-            {history.map((h, idx) => (
-              <Cell
-                key={idx}
-                fill={EVENT_TYPE_CHART_COLORS[h.event_type as EventType] ?? "#15803d"}
+          <YAxis
+            tick={{ fontSize: 11, fill: "#64748b" }}
+            axisLine={false}
+            tickLine={false}
+            width={36}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="total_points"
+            stroke="#7e22ce"
+            strokeWidth={2}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            dot={(props: any) => (
+              <CustomDot
+                key={`dot-${props.index}`}
+                cx={props.cx}
+                cy={props.cy}
+                payload={props.payload}
               />
-            ))}
-          </Bar>
-        </BarChart>
+            )}
+            activeDot={{ r: 7, fill: "#7e22ce", stroke: "white", strokeWidth: 2 }}
+          />
+        </LineChart>
       </ResponsiveContainer>
 
       {/* Legend */}

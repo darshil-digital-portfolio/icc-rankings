@@ -39,17 +39,11 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/rankings"
-                className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-6 py-3 text-sm font-bold text-pitch-950 shadow-lg transition-all hover:bg-gold-400 hover:shadow-gold-400/30"
-              >
+              <Link href="/rankings" className="btn-gold">
                 <BarChart3Icon className="h-4 w-4" />
                 View Full Rankings
               </Link>
-              <Link
-                href="/teams"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/20"
-              >
+              <Link href="/teams" className="btn-ghost">
                 <UsersIcon className="h-4 w-4" />
                 Browse Teams
               </Link>

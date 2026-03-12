@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { EventType } from "@/types";
 
@@ -37,10 +37,18 @@ export function EventTypeFilter({ current }: EventTypeFilterProps) {
             key={et.value}
             onClick={() => handleChange(et.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all",
+              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold",
+              "transition-all duration-150",
               active
-                ? "border-pitch-600 bg-pitch-600 text-white shadow-sm"
-                : "border-slate-200 bg-white text-slate-600 hover:border-pitch-400 hover:text-pitch-700",
+                ? [
+                    "border-transparent text-white shadow-md shadow-pitch-700/30",
+                    "bg-gradient-to-r from-pitch-700 to-pitch-500",
+                    "hover:from-pitch-600 hover:to-pitch-400",
+                  ]
+                : [
+                    "border-slate-200 bg-white text-slate-600",
+                    "hover:border-pitch-300 hover:bg-pitch-50 hover:text-pitch-700 hover:shadow-sm",
+                  ],
             )}
           >
             {et.label}
@@ -48,7 +56,9 @@ export function EventTypeFilter({ current }: EventTypeFilterProps) {
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                  active ? "bg-white/20 text-white" : "bg-pitch-50 text-pitch-600",
+                  active
+                    ? "bg-white/20 text-white"
+                    : "bg-pitch-50 text-pitch-600",
                 )}
               >
                 {et.mult}×

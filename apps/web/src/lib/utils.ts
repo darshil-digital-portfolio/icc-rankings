@@ -35,7 +35,7 @@ export const STAGE_COLORS: Record<Stage, string> = {
   other_stage: "bg-blue-100 text-blue-700",
   semi_final: "bg-amber-100 text-amber-700",
   final: "bg-orange-100 text-orange-700",
-  champion: "bg-pitch-100 text-pitch-800",
+  champion: "bg-pitch-100 text-pitch-700",
 };
 
 export const STAGE_RANK: Record<Stage, number> = {
@@ -91,6 +91,44 @@ export const EVENT_TYPE_CHART_COLORS: Record<EventType, string> = {
   test_championship: "#ef4444",
   men_world_cup: "#d4af37",
 };
+
+// ─── Team jersey / flag colors ────────────────────────────────────────────────
+// Keyed by team slug. Used to color chart bars/lines by real team identity.
+
+export const TEAM_COLORS: Record<string, string> = {
+  // Major Test nations
+  "india":           "#1B4EBE", // India blue (ODI jersey)
+  "australia":       "#FFB81C", // Australian gold
+  "england":         "#1E3A5F", // England navy
+  "pakistan":        "#006747", // Pakistan green
+  "west-indies":     "#7B0020", // West Indies maroon
+  "new-zealand":     "#1C1C1C", // New Zealand black
+  "south-africa":    "#007A4D", // Proteas green
+  "sri-lanka":       "#003082", // Sri Lanka navy
+  "bangladesh":      "#006A4E", // Bangladesh green
+  "afghanistan":     "#00539F", // Afghanistan blue
+  "zimbabwe":        "#006400", // Zimbabwe green
+  // Associates
+  "ireland":         "#169B62", // Ireland green
+  "scotland":        "#003DA5", // Scotland blue
+  "netherlands":     "#FF6600", // Dutch orange
+  "uae":             "#CC0000", // UAE red
+  "nepal":           "#003893", // Nepal blue (flag)
+  "papua-new-guinea":"#CE1126", // PNG red
+  "oman":            "#DB3935", // Oman red
+  "hong-kong":       "#C42B1C", // Hong Kong red
+  "canada":          "#FF0000", // Canada red
+  "usa":             "#002868", // USA navy
+  "united-states":   "#002868", // USA alt slug
+  "kenya":           "#006600", // Kenya green
+  "bermuda":         "#003594", // Bermuda blue
+  "namibia":         "#003580", // Namibia blue
+};
+
+/** Returns team's jersey color by slug, falling back to royal purple. */
+export function getTeamColor(slug: string): string {
+  return TEAM_COLORS[slug] ?? "#7e22ce";
+}
 
 // ─── Rank medal helpers ───────────────────────────────────────────────────────
 

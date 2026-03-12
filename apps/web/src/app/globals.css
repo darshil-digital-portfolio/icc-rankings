@@ -13,15 +13,14 @@
   }
 
   body {
-    @apply bg-white text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar — purple toned */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -32,11 +31,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-400 rounded-full;
+    @apply bg-pitch-300 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-500;
+    @apply bg-pitch-400;
   }
 }
 
@@ -55,5 +54,31 @@
 
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-xl bg-pitch-600 px-6 py-3 text-sm font-bold text-white shadow-md
+           transition-all hover:bg-pitch-500 hover:shadow-lg hover:shadow-pitch-600/25 hover:-translate-y-0.5
+           active:translate-y-0 active:shadow-sm;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center gap-2 rounded-xl bg-gold-500 px-6 py-3 text-sm font-bold text-pitch-950 shadow-md
+           transition-all hover:bg-gold-400 hover:shadow-lg hover:shadow-gold-500/30 hover:-translate-y-0.5
+           active:translate-y-0 active:shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-xl border border-pitch-200 bg-white px-6 py-3 text-sm font-semibold text-pitch-700 shadow-sm
+           transition-all hover:bg-pitch-50 hover:border-pitch-300 hover:shadow-md hover:-translate-y-0.5
+           active:translate-y-0 active:shadow-sm;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white
+           backdrop-blur-sm transition-all hover:bg-white/20 hover:-translate-y-0.5
+           active:translate-y-0;
   }
 }
