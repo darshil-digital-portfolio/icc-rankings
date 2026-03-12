@@ -53,13 +53,13 @@ export default async function HomePage() {
       </section>
 
       {/* ── Stats strip ────────────────────────────────────────────────────── */}
-      <section className="border-b border-slate-200 bg-white">
+      <section className="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
         <div className="container-page">
-          <div className="grid grid-cols-2 divide-x divide-slate-200 sm:grid-cols-4">
+          <div className="grid grid-cols-2 divide-x divide-slate-200 sm:grid-cols-4 dark:divide-slate-700">
             {STATS.map((s) => (
               <div key={s.label} className="px-6 py-6 text-center">
-                <p className="font-mono text-3xl font-extrabold text-pitch-700">{s.value}</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-slate-500">
+                <p className="font-mono text-3xl font-extrabold text-pitch-700 dark:text-pitch-400">{s.value}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   {s.label}
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default async function HomePage() {
                 <Link
                   key={entry.team_id}
                   href={`/teams/${entry.team_slug}`}
-                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all hover:shadow-md hover:border-pitch-300 group"
+                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all hover:shadow-md hover:border-pitch-300 group dark:border-slate-700 dark:bg-slate-900 dark:hover:border-pitch-700"
                 >
                   <span className="w-6 text-center text-lg font-bold text-slate-400">
                     {entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : entry.rank}
@@ -127,7 +127,7 @@ export default async function HomePage() {
                 <Link
                   key={event.id}
                   href={`/events/${event.id}`}
-                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all hover:shadow-md hover:border-pitch-300 group"
+                  className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all hover:shadow-md hover:border-pitch-300 group dark:border-slate-700 dark:bg-slate-900 dark:hover:border-pitch-700"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pitch-50 font-mono text-sm font-bold text-pitch-700">
                     {event.year}
@@ -170,11 +170,11 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-xl border border-pitch-200 bg-pitch-50 p-5 text-center">
-            <p className="font-mono text-lg font-bold text-pitch-800">
+          <div className="mt-6 rounded-xl border border-pitch-200 bg-pitch-50 p-5 text-center dark:border-pitch-900/50 dark:bg-pitch-950/30">
+            <p className="font-mono text-lg font-bold text-pitch-800 dark:text-pitch-300">
               Points = Stage Base × Event Multiplier
             </p>
-            <p className="mt-1 text-sm text-pitch-600">
+            <p className="mt-1 text-sm text-pitch-600 dark:text-pitch-400">
               Example: Champion (5) at Men&apos;s World Cup (8×) = <strong>40 points</strong>
             </p>
           </div>

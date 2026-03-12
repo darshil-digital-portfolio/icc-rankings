@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { TrophyIcon, Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useState } from "react";
 
 const NAV_LINKS = [
@@ -36,6 +37,7 @@ export function Header() {
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-1 md:flex">
+            <ThemeToggle />
             {NAV_LINKS.map((link) => {
               const active =
                 link.href === "/"
@@ -58,7 +60,9 @@ export function Header() {
             })}
           </nav>
 
-          {/* Mobile burger */}
+          {/* Theme toggle + Mobile burger */}
+          <div className="flex items-center gap-1">
+          <ThemeToggle />
           <button
             className="flex items-center justify-center rounded-lg p-2 text-white hover:bg-white/10 md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
@@ -66,6 +70,7 @@ export function Header() {
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+          </div>
         </div>
       </div>
 

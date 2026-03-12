@@ -9,33 +9,33 @@
   }
 
   * {
-    @apply border-slate-200;
+    @apply border-slate-200 dark:border-slate-700;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
   }
 
   html {
     scroll-behavior: smooth;
   }
 
-  /* Custom scrollbar — purple toned */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-slate-100;
+    @apply bg-slate-100 dark:bg-slate-800;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-pitch-300 rounded-full;
+    @apply bg-pitch-300 rounded-full dark:bg-pitch-700;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-pitch-400;
+    @apply bg-pitch-400 dark:bg-pitch-600;
   }
 }
 
@@ -45,11 +45,11 @@
   }
 
   .section-heading {
-    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl;
+    @apply text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl;
   }
 
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700/60;
   }
 
   .badge {
@@ -72,7 +72,9 @@
 
   .btn-secondary {
     @apply inline-flex items-center gap-2 rounded-xl border border-pitch-200 bg-white px-6 py-3 text-sm font-semibold text-pitch-700 shadow-sm
+           dark:border-pitch-800 dark:bg-slate-800 dark:text-pitch-300
            transition-all hover:bg-pitch-50 hover:border-pitch-300 hover:shadow-md hover:-translate-y-0.5
+           dark:hover:bg-pitch-950 dark:hover:border-pitch-700
            active:translate-y-0 active:shadow-sm;
   }
 

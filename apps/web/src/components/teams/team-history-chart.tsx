@@ -63,7 +63,7 @@ function CustomTooltip({
   const dotColor = EVENT_TYPE_CHART_COLORS[h.event_type as EventType] ?? "#7e22ce";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xl max-w-[240px]">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xl max-w-[240px] dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-center gap-2">
         <span
           className="h-2.5 w-2.5 rounded-full shrink-0"

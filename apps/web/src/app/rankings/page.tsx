@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getRankings, getTeam } from "@/lib/api";
+import { getRankings, getTeams, getTeam } from "@/lib/api";
 import { RankingsTable } from "@/components/rankings/rankings-table";
 import { RankingsLineChart } from "@/components/rankings/rankings-line-chart";
 import { EventTypeFilter } from "@/components/rankings/event-type-filter";
@@ -14,63 +14,63 @@ interface PageProps {
   searchParams: Promise<{ event_type?: string }>;
 }
 
-// Top N teams to include in the line chart — keep ≤ 10 for readability
-const CHART_TEAMS = 8;
-
 export default async function RankingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const eventType = params.event_type;
 
-  const response = await getRankings({
-    event_type: eventType,
-    limit: 50,
-  });
+  // Rankings table data (filtered by event_type if set)
+  const response = await getRankings({ event_type: eventType, limit: 50 });
 
-  // Fetch full history for the top CHART_TEAMS teams in parallel
-  const topSlugs = response.data.slice(0, CHART_TEAMS).map((r) => r.team_slug);
-  const teamDetails = await Promise.all(topSlugs.map((slug) => getTeam(slug)));
+  // All teams for the chart — fetch every team that has played at least once
+  const allTeamsRes = await getTeams({ limit: 200 });
+  const slugsForChart = allTeamsRes.data
+    .filter((t) => t.events_participated > 0)
+    .map((t) => t.slug);
+
+  // Fetch full history for every active team in parallel
+  const teamDetails = await Promise.all(slugsForChart.map((slug) => getTeam(slug)));
 
   return (
     <div className="container-page py-10">
       {/* Page header */}
       <div className="mb-8">
         <h1 className="section-heading">ICC Team Rankings</h1>
-        <p className="mt-2 text-slate-500">
+        <p className="mt-2 text-slate-500 dark:text-slate-400">
           Cumulative points earned across all ICC events.
           Points = Stage base × Event multiplier.
         </p>
       </div>
 
       {/* Scoring legend */}
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           Scoring System
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {SCORING_LEGEND.map((item) => (
             <div
               key={item.stage}
-              className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2"
+              className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800"
             >
               <span className="text-base">{item.emoji}</span>
               <div>
-                <p className="text-xs font-semibold text-slate-700">{item.stage}</p>
-                <p className="text-xs text-slate-500">{item.points} pts</p>
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{item.stage}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{item.points} pts</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
+        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
             Event Multipliers
           </p>
           <div className="flex flex-wrap gap-2">
             {MULTIPLIER_LEGEND.map((item) => (
               <span
                 key={item.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               >
-                <span className="font-bold text-pitch-700">{item.mult}×</span>
+                <span className="font-bold text-pitch-700 dark:text-pitch-400">{item.mult}×</span>
                 {item.label}
               </span>
             ))}
@@ -84,13 +84,13 @@ export default async function RankingsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Results count */}
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
         {response.meta.total} team{response.meta.total !== 1 ? "s" : ""}
         {eventType ? " for this event type" : " across all events"}
       </p>
 
       <div className="space-y-6">
-        {/* Line chart — cumulative points over time for top teams */}
+        {/* Line chart — all nations, cumulative points over time */}
         {teamDetails.length > 0 && (
           <RankingsLineChart teams={teamDetails} eventType={eventType} />
         )}

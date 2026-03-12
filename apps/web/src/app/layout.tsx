@@ -37,8 +37,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#3b0764",
-  colorScheme: "light",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#3b0764" },
+    { media: "(prefers-color-scheme: light)", color: "#3b0764" },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({
@@ -47,8 +50,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="flex min-h-screen flex-col bg-slate-50">
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        {/* Prevent flash of wrong theme — runs before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.classList.add('dark');}}catch(e){}})()`,
+          }}
+        />
+      </head>
+      <body className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
         <Providers>
           <Header />
           <main className="flex-1">{children}</main>

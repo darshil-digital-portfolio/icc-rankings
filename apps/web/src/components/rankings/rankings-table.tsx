@@ -14,7 +14,7 @@ function SkeletonRow() {
     <tr className="animate-pulse">
       {Array.from({ length: 6 }).map((_, i) => (
         <td key={i} className="px-4 py-3">
-          <div className="h-4 rounded bg-slate-200" />
+          <div className="h-4 rounded bg-slate-200 dark:bg-slate-700" />
         </td>
       ))}
     </tr>
@@ -23,10 +23,10 @@ function SkeletonRow() {
 
 export function RankingsTable({ data, isLoading }: RankingsTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
             <th className="px-4 py-3 w-16">Rank</th>
             <th className="px-4 py-3">Team</th>
             <th className="px-4 py-3 text-right">Points</th>
@@ -35,7 +35,7 @@ export function RankingsTable({ data, isLoading }: RankingsTableProps) {
             <th className="px-4 py-3 text-right">Avg/Event</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
           {isLoading
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} />)
             : data.map((entry, idx) => (
@@ -45,7 +45,7 @@ export function RankingsTable({ data, isLoading }: RankingsTableProps) {
       </table>
 
       {!isLoading && data.length === 0 && (
-        <div className="py-16 text-center text-slate-400">
+        <div className="py-16 text-center text-slate-400 dark:bg-slate-900">
           <p className="text-base font-medium">No teams found</p>
         </div>
       )}
@@ -68,47 +68,39 @@ function RankingsRow({
   return (
     <tr
       className={cn(
-        "transition-colors hover:bg-slate-50",
-        isTopThree && "bg-gradient-to-r from-gold-50/40 to-transparent",
+        "transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50",
+        isTopThree && "bg-gradient-to-r from-gold-50/40 to-transparent dark:from-gold-900/10",
       )}
     >
-      {/* Rank */}
-      <td className="px-4 py-3 font-mono font-semibold text-slate-600">
+      <td className="px-4 py-3 font-mono font-semibold text-slate-600 dark:text-slate-400">
         <span className="text-base">{getRankMedal(entry.rank)}</span>
       </td>
 
-      {/* Team */}
       <td className="px-4 py-3">
-        <Link
-          href={`/teams/${entry.team_slug}`}
-          className="flex items-center gap-3 group"
-        >
+        <Link href={`/teams/${entry.team_slug}`} className="flex items-center gap-3 group">
           <span className="text-xl leading-none">{entry.flag_emoji}</span>
-          <span className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors">
+          <span className="font-semibold text-slate-800 group-hover:text-pitch-600 transition-colors dark:text-slate-100 dark:group-hover:text-pitch-400">
             {entry.team_name}
           </span>
-          <span className="hidden text-xs font-medium text-slate-400 sm:block">
+          <span className="hidden text-xs font-medium text-slate-400 sm:block dark:text-slate-500">
             {entry.team_short_name}
           </span>
         </Link>
       </td>
 
-      {/* Points */}
       <td className="px-4 py-3 text-right">
-        <span className="font-mono text-base font-bold text-pitch-700">
+        <span className="font-mono text-base font-bold text-pitch-700 dark:text-pitch-400">
           {formatPoints(entry.total_points)}
         </span>
       </td>
 
-      {/* Events */}
-      <td className="px-4 py-3 text-right font-mono text-slate-600">
+      <td className="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">
         {entry.events_participated}
       </td>
 
-      {/* Titles */}
       <td className="px-4 py-3 text-right">
         {entry.titles > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-bold text-gold-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-bold text-gold-700 dark:bg-gold-900/40 dark:text-gold-400">
             🏆 {entry.titles}
           </span>
         ) : (
@@ -116,8 +108,7 @@ function RankingsRow({
         )}
       </td>
 
-      {/* Avg */}
-      <td className="px-4 py-3 text-right font-mono text-xs text-slate-500">
+      <td className="px-4 py-3 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
         {avg}
       </td>
     </tr>
