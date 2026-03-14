@@ -74,7 +74,7 @@ export default async function HomePage() {
           {/* Top 5 rankings */}
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Top 5 Rankings</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Top 5 Rankings</h2>
               <Link
                 href="/rankings"
                 className="flex items-center gap-1 text-sm font-semibold text-pitch-600 hover:text-pitch-800 transition-colors"
@@ -95,10 +95,10 @@ export default async function HomePage() {
                   </span>
                   <span className="text-2xl leading-none">{entry.flag_emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors">
+                    <p className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors dark:text-neon-green/90 dark:group-hover:text-pitch-400">
                       {entry.team_name}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 dark:text-slate-400">
                       {entry.events_participated} events · {entry.titles} title{entry.titles !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -113,7 +113,7 @@ export default async function HomePage() {
           {/* Recent tournaments */}
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Recent Tournaments</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Recent Tournaments</h2>
               <Link
                 href="/events"
                 className="flex items-center gap-1 text-sm font-semibold text-pitch-600 hover:text-pitch-800 transition-colors"
@@ -133,7 +133,7 @@ export default async function HomePage() {
                     {event.year}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors truncate">
+                    <p className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors truncate dark:text-neon-cyan/90 dark:group-hover:text-pitch-400">
                       {event.short_name}
                     </p>
                     <p className="text-xs text-slate-400 truncate">

@@ -83,14 +83,14 @@ export default async function EventDetailPage({ params }: PageProps) {
       </div>
 
       {/* Participants table */}
-      <h2 className="mb-4 text-lg font-bold text-slate-800">
+      <h2 className="mb-4 text-lg font-bold text-slate-800 dark:text-slate-800">
         Participating Teams &amp; Points Earned
       </h2>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-[#FDF9D4] shadow-sm dark:border-[#C5A882] dark:bg-[#E7D5AD]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <tr className="border-b border-[#E0D89A] bg-[#EDE8BB] text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-[#D4BF96] dark:text-slate-700 dark:border-[#C5A882]">
               <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Team</th>
               <th className="px-4 py-3">Stage</th>
@@ -99,16 +99,16 @@ export default async function EventDetailPage({ params }: PageProps) {
               <th className="px-4 py-3 text-right">Points Earned</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#E0D89A] dark:divide-[#C5A882]">
             {event.participants.map((p, idx) => (
               <tr
                 key={p.team_id}
                 className={cn(
-                  "hover:bg-slate-50 transition-colors",
+                  "hover:bg-[#EDE8BB] transition-colors dark:hover:bg-[#D4BF96]/50",
                   p.stage === "champion" && "bg-gold-50/40",
                 )}
               >
-                <td className="px-4 py-3 font-mono text-sm text-slate-400">
+                <td className="px-4 py-3 font-mono text-sm text-slate-400 dark:text-slate-600">
                   {idx + 1}
                 </td>
                 <td className="px-4 py-3">
@@ -117,10 +117,10 @@ export default async function EventDetailPage({ params }: PageProps) {
                     className="flex items-center gap-3 group"
                   >
                     <span className="text-xl leading-none">{p.flag_emoji}</span>
-                    <span className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors">
+                    <span className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors dark:text-pitch-800 dark:group-hover:text-pitch-600">
                       {p.team_name}
                     </span>
-                    <span className="hidden text-xs text-slate-400 sm:block">
+                    <span className="hidden text-xs text-slate-400 sm:block dark:text-slate-600">
                       {p.team_short_name}
                     </span>
                   </Link>
@@ -135,10 +135,10 @@ export default async function EventDetailPage({ params }: PageProps) {
                     {p.stage_label}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-slate-500">
+                <td className="px-4 py-3 text-right font-mono text-slate-500 dark:text-slate-600">
                   {p.base_points}
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-slate-500">
+                <td className="px-4 py-3 text-right font-mono text-slate-500 dark:text-slate-600">
                   {p.multiplier}×
                 </td>
                 <td className="px-4 py-3 text-right font-mono font-bold text-pitch-700">

@@ -40,6 +40,10 @@ const config: Config = {
           850: "#1a2535",
           950: "#0b1120",
         },
+        neon: {
+          green: "#39ff14",
+          cyan: "#00e5ff",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],

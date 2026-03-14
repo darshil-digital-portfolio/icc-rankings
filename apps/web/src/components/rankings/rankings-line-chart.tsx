@@ -132,7 +132,7 @@ function ChartLegend({ teams }: { teams: TeamDetailResponse[] }) {
   return (
     <div className="mt-4 flex max-h-24 flex-wrap gap-x-3 gap-y-1.5 overflow-y-auto">
       {teams.map((team) => (
-        <span key={team.slug} className="inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-400">
+        <span key={team.slug} className="inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-600">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: getTeamColor(team.slug) }} />
           <span>{team.flag_emoji}</span>
           <span>{team.short_name}</span>
@@ -153,18 +153,18 @@ export function RankingsLineChart({ teams, eventType }: RankingsLineChartProps) 
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="rounded-xl border border-slate-200 bg-[#FDF9D4] p-6 shadow-sm dark:border-slate-700 dark:bg-[#E7D5AD]">
         <p className="text-center text-sm text-slate-400">No chart data for this filter.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <h3 className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+    <div className="rounded-xl border border-slate-200 bg-[#FDF9D4] p-6 shadow-sm dark:border-slate-700 dark:bg-[#E7D5AD]">
+      <h3 className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-700">
         Cumulative Points Over Time · All {activeTeams.length} Nations
       </h3>
-      <p className="mb-6 text-xs text-slate-400 dark:text-slate-500">
+      <p className="mb-6 text-xs text-slate-400 dark:text-slate-600">
         Drag the handles below the chart to zoom into a time window
       </p>
 

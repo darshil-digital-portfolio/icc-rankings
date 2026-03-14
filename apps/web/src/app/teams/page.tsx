@@ -33,10 +33,10 @@ export default async function TeamsPage() {
               <div className="flex items-center gap-3">
                 <span className="text-3xl leading-none">{team.flag_emoji}</span>
                 <div>
-                  <p className="font-bold text-slate-800 group-hover:text-pitch-700 transition-colors">
+                  <p className="font-bold text-slate-800 group-hover:text-pitch-700 transition-colors dark:text-neon-green/90 dark:group-hover:text-pitch-400">
                     {team.name}
                   </p>
-                  <p className="text-xs font-semibold text-slate-400">
+                  <p className="text-xs font-semibold text-slate-400 dark:text-neon-green/60">
                     {team.short_name}
                   </p>
                 </div>

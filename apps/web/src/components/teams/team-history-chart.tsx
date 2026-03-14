@@ -108,11 +108,11 @@ export function TeamHistoryChart({ history }: TeamHistoryChartProps) {
     .map((d) => d.idx);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-500">
+    <div className="rounded-xl border border-slate-200 bg-[#FDF9D4] p-6 shadow-sm dark:border-[#C5A882] dark:bg-[#E7D5AD]">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-700">
         Points per Tournament
       </h2>
-      <p className="mb-4 text-xs text-slate-400">
+      <p className="mb-4 text-xs text-slate-400 dark:text-slate-600">
         Dot colour indicates the tournament format
       </p>
 
@@ -161,7 +161,7 @@ export function TeamHistoryChart({ history }: TeamHistoryChartProps) {
           return (
             <span
               key={et}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-600"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#E0D89A] bg-[#EDE8BB] px-2.5 py-1 text-[10px] font-medium text-slate-600 dark:border-[#C5A882] dark:bg-[#D4BF96] dark:text-slate-700"
             >
               <span
                 className="h-2.5 w-2.5 rounded-full"

@@ -23,10 +23,10 @@ function SkeletonRow() {
 
 export function RankingsTable({ data, isLoading }: RankingsTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-[#FDF9D4] shadow-sm dark:border-slate-700 dark:bg-[#E7D5AD]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+          <tr className="border-b border-[#E0D89A] bg-[#EDE8BB] text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-[#C5A882] dark:bg-[#D4BF96] dark:text-slate-700">
             <th className="px-4 py-3 w-16">Rank</th>
             <th className="px-4 py-3">Team</th>
             <th className="px-4 py-3 text-right">Points</th>
@@ -35,7 +35,7 @@ export function RankingsTable({ data, isLoading }: RankingsTableProps) {
             <th className="px-4 py-3 text-right">Avg/Event</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+        <tbody className="divide-y divide-[#E0D89A] dark:divide-[#C5A882]">
           {isLoading
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} />)
             : data.map((entry, idx) => (
@@ -68,39 +68,39 @@ function RankingsRow({
   return (
     <tr
       className={cn(
-        "transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50",
+        "transition-colors hover:bg-[#EDE8BB] dark:hover:bg-[#D4BF96]/50",
         isTopThree && "bg-gradient-to-r from-gold-50/40 to-transparent dark:from-gold-900/10",
       )}
     >
-      <td className="px-4 py-3 font-mono font-semibold text-slate-600 dark:text-slate-400">
+      <td className="px-4 py-3 font-mono font-semibold text-slate-600 dark:text-slate-600">
         <span className="text-base">{getRankMedal(entry.rank)}</span>
       </td>
 
       <td className="px-4 py-3">
         <Link href={`/teams/${entry.team_slug}`} className="flex items-center gap-3 group">
           <span className="text-xl leading-none">{entry.flag_emoji}</span>
-          <span className="font-semibold text-slate-800 group-hover:text-pitch-600 transition-colors dark:text-slate-100 dark:group-hover:text-pitch-400">
+          <span className="font-semibold text-slate-800 group-hover:text-pitch-600 transition-colors dark:text-pitch-800 dark:group-hover:text-pitch-600">
             {entry.team_name}
           </span>
-          <span className="hidden text-xs font-medium text-slate-400 sm:block dark:text-slate-500">
+          <span className="hidden text-xs font-medium text-slate-400 sm:block dark:text-slate-600">
             {entry.team_short_name}
           </span>
         </Link>
       </td>
 
       <td className="px-4 py-3 text-right">
-        <span className="font-mono text-base font-bold text-pitch-700 dark:text-pitch-400">
+        <span className="font-mono text-base font-bold text-pitch-700 dark:text-pitch-700">
           {formatPoints(entry.total_points)}
         </span>
       </td>
 
-      <td className="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">
+      <td className="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-600">
         {entry.events_participated}
       </td>
 
       <td className="px-4 py-3 text-right">
         {entry.titles > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-bold text-gold-700 dark:bg-gold-900/40 dark:text-gold-400">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-bold text-gold-700 dark:bg-gold-200 dark:text-gold-700">
             🏆 {entry.titles}
           </span>
         ) : (
@@ -108,7 +108,7 @@ function RankingsRow({
         )}
       </td>
 
-      <td className="px-4 py-3 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+      <td className="px-4 py-3 text-right font-mono text-xs text-slate-500 dark:text-slate-600">
         {avg}
       </td>
     </tr>

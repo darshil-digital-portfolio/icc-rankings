@@ -37,7 +37,6 @@ export function Header() {
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-1 md:flex">
-            <ThemeToggle />
             {NAV_LINKS.map((link) => {
               const active =
                 link.href === "/"

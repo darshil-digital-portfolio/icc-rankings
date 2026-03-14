@@ -68,7 +68,7 @@ export default async function EventsPage() {
                     className="card group p-4 transition-all hover:shadow-md hover:border-pitch-300"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-slate-800 group-hover:text-pitch-700 transition-colors leading-tight">
+                      <h3 className="font-bold text-slate-800 group-hover:text-pitch-700 transition-colors leading-tight dark:text-neon-cyan/90 dark:group-hover:text-pitch-400">
                         {event.short_name}
                       </h3>
                       <span className="shrink-0 rounded-full bg-pitch-50 px-2 py-0.5 text-[10px] font-bold text-pitch-700">

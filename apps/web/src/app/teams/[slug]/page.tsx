@@ -73,7 +73,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
       {/* Breakdown by event type */}
       {breakdown.breakdown.length > 0 && (
         <div className="mb-8">
-          <h2 className="mb-4 text-lg font-bold text-slate-800">Points by Format</h2>
+          <h2 className="mb-4 text-lg font-bold text-slate-700 dark:text-slate-800">Points by Format</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {breakdown.breakdown.map((b) => (
               <div
@@ -84,17 +84,17 @@ export default async function TeamDetailPage({ params }: PageProps) {
                   borderLeftWidth: 4,
                 }}
               >
-                <p className="text-xs font-semibold text-slate-500">{b.event_type_label}</p>
-                <p className="mt-1 font-mono text-2xl font-bold text-pitch-700">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-600">{b.event_type_label}</p>
+                <p className="mt-1 font-mono text-2xl font-bold text-pitch-700 dark:text-pitch-700">
                   {formatPoints(b.total_points)}
                 </p>
-                <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                <div className="mt-2 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-600">
                   <span>{b.events_participated} events</span>
                   {b.titles > 0 && (
-                    <span className="font-semibold text-gold-600">🏆 {b.titles} title{b.titles !== 1 ? "s" : ""}</span>
+                    <span className="font-semibold text-gold-600 dark:text-gold-400">🏆 {b.titles} title{b.titles !== 1 ? "s" : ""}</span>
                   )}
                 </div>
-                <p className="mt-0.5 text-[10px] text-slate-400">
+                <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-600">
                   {b.multiplier}× multiplier
                 </p>
               </div>
@@ -112,17 +112,17 @@ export default async function TeamDetailPage({ params }: PageProps) {
 
       {/* Full history table */}
       <div>
-        <h2 className="mb-4 text-lg font-bold text-slate-800">
+        <h2 className="mb-4 text-lg font-bold text-slate-700 dark:text-slate-800">
           Tournament History
-          <span className="ml-2 text-sm font-normal text-slate-400">
+          <span className="ml-2 text-sm font-normal text-slate-400 dark:text-slate-600">
             ({team.history.length} events)
           </span>
         </h2>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-[#FDF9D4] shadow-sm dark:border-[#C5A882] dark:bg-[#E7D5AD]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[#E0D89A] bg-[#EDE8BB] text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-[#C5A882] dark:bg-[#D4BF96] dark:text-slate-700">
                 <th className="px-4 py-3">Year</th>
                 <th className="px-4 py-3">Event</th>
                 <th className="px-4 py-3">Format</th>
@@ -132,19 +132,19 @@ export default async function TeamDetailPage({ params }: PageProps) {
                 <th className="px-4 py-3 text-right">Points</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E0D89A] dark:divide-[#C5A882]">
               {team.history.map((h) => (
-                <tr key={h.event_id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-slate-500">{h.year}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">
+                <tr key={h.event_id} className="hover:bg-[#EDE8BB] transition-colors dark:hover:bg-[#D4BF96]/50">
+                  <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-600">{h.year}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-800">
                     <Link
                       href={`/events/${h.event_id}`}
-                      className="hover:text-pitch-700 transition-colors"
+                      className="hover:text-pitch-700 transition-colors dark:hover:text-pitch-600"
                     >
                       {h.event_short_name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{h.event_type_label}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-600">{h.event_type_label}</td>
                   <td className="px-4 py-3">
                     <span
                       className={cn(
@@ -155,24 +155,24 @@ export default async function TeamDetailPage({ params }: PageProps) {
                       {h.stage_label}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-slate-500">
+                  <td className="px-4 py-3 text-right font-mono text-slate-500 dark:text-slate-600">
                     {h.base_points}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-slate-500">
+                  <td className="px-4 py-3 text-right font-mono text-slate-500 dark:text-slate-600">
                     {h.multiplier}×
                   </td>
-                  <td className="px-4 py-3 text-right font-mono font-bold text-pitch-700">
+                  <td className="px-4 py-3 text-right font-mono font-bold text-pitch-700 dark:text-pitch-700">
                     {h.total_points}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={6} className="px-4 py-3 text-right text-sm font-semibold text-slate-600">
+              <tr className="border-t border-slate-200 bg-slate-50 dark:border-[#C5A882] dark:bg-[#D4BF96]">
+                <td colSpan={6} className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-slate-700">
                   Grand Total
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-base font-bold text-pitch-700">
+                <td className="px-4 py-3 text-right font-mono text-base font-bold text-pitch-700 dark:text-pitch-700">
                   {formatPoints(team.total_points)}
                 </td>
               </tr>
