@@ -1,9 +1,11 @@
+import type React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEvent } from "@/lib/api";
 import { cn, STAGE_COLORS, formatPoints } from "@/lib/utils";
 import { ArrowLeft, MapPinIcon, UsersIcon } from "lucide-react";
+import { TeamFlag } from "@/components/ui/team-flag";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -74,7 +76,12 @@ export default async function EventDetailPage({ params }: PageProps) {
               {champion && (
                 <StatChip
                   label="Champion"
-                  value={`${champion.flag_emoji} ${champion.team_name}`}
+                  value={
+                    <span className="flex items-center justify-center gap-1.5">
+                      <TeamFlag slug={champion.team_slug} name={champion.team_name} size="sm" />
+                      {champion.team_name}
+                    </span>
+                  }
                 />
               )}
             </div>
@@ -116,7 +123,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                     href={`/teams/${p.team_slug}`}
                     className="flex items-center gap-3 group"
                   >
-                    <span className="text-xl leading-none">{p.flag_emoji}</span>
+                    <TeamFlag slug={p.team_slug} name={p.team_name} size="sm" />
                     <span className="font-semibold text-slate-800 group-hover:text-pitch-700 transition-colors dark:text-pitch-800 dark:group-hover:text-pitch-600">
                       {p.team_name}
                     </span>
@@ -159,7 +166,7 @@ function StatChip({
   highlight,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   highlight?: boolean;
 }) {
   return (

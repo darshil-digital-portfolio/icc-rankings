@@ -754,15 +754,15 @@ fn world_test_championship_events() -> Vec<EventSeed> {
             year: 2021,
             host: "Various / England (Final)",
             results: vec![
-                ("new-zealand",  Stage::Champion),
-                ("india",        Stage::Final),
-                ("australia",    Stage::OtherStage),
-                ("england",      Stage::OtherStage),
-                ("south-africa", Stage::OtherStage),
-                ("pakistan",     Stage::OtherStage),
-                ("sri-lanka",    Stage::OtherStage),
-                ("west-indies",  Stage::OtherStage),
-                ("bangladesh",   Stage::OtherStage),
+                ("new-zealand",  Stage::Champion),   // rank 1
+                ("india",        Stage::Final),       // rank 2
+                ("australia",    Stage::SemiFinal),   // rank 3
+                ("england",      Stage::SemiFinal),   // rank 4
+                ("south-africa", Stage::OtherStage),  // rank 5
+                ("pakistan",     Stage::OtherStage),  // rank 6
+                ("sri-lanka",    Stage::FirstStage),  // rank 7
+                ("west-indies",  Stage::FirstStage),  // rank 8
+                ("bangladesh",   Stage::FirstStage),  // rank 9
             ],
         },
         EventSeed {
@@ -772,16 +772,16 @@ fn world_test_championship_events() -> Vec<EventSeed> {
             year: 2023,
             host: "Various / England (Final)",
             results: vec![
-                ("australia",    Stage::Champion),
-                ("india",        Stage::Final),
-                ("england",      Stage::OtherStage),
-                ("south-africa", Stage::OtherStage),
-                ("new-zealand",  Stage::OtherStage),
-                ("pakistan",     Stage::OtherStage),
-                ("sri-lanka",    Stage::OtherStage),
-                ("west-indies",  Stage::OtherStage),
-                ("bangladesh",   Stage::OtherStage),
-                ("zimbabwe",     Stage::OtherStage),
+                ("australia",    Stage::Champion),   // rank 1
+                ("india",        Stage::Final),       // rank 2
+                ("england",      Stage::SemiFinal),   // rank 3
+                ("south-africa", Stage::SemiFinal),   // rank 4
+                ("new-zealand",  Stage::OtherStage),  // rank 5
+                ("pakistan",     Stage::OtherStage),  // rank 6
+                ("sri-lanka",    Stage::FirstStage),  // rank 7
+                ("west-indies",  Stage::FirstStage),  // rank 8
+                ("bangladesh",   Stage::FirstStage),  // rank 9
+                ("zimbabwe",     Stage::FirstStage),  // rank 10
             ],
         },
         EventSeed {
@@ -791,16 +791,16 @@ fn world_test_championship_events() -> Vec<EventSeed> {
             year: 2025,
             host: "Various / England (Final)",
             results: vec![
-                ("south-africa", Stage::Champion),
-                ("australia",    Stage::Final),
-                ("india",        Stage::OtherStage),
-                ("england",      Stage::OtherStage),
-                ("new-zealand",  Stage::OtherStage),
-                ("pakistan",     Stage::OtherStage),
-                ("sri-lanka",    Stage::OtherStage),
-                ("west-indies",  Stage::OtherStage),
-                ("bangladesh",   Stage::OtherStage),
-                ("zimbabwe",     Stage::OtherStage),
+                ("south-africa", Stage::Champion),   // rank 1
+                ("australia",    Stage::Final),       // rank 2
+                ("india",        Stage::SemiFinal),   // rank 3
+                ("england",      Stage::SemiFinal),   // rank 4
+                ("new-zealand",  Stage::OtherStage),  // rank 5
+                ("pakistan",     Stage::OtherStage),  // rank 6
+                ("sri-lanka",    Stage::FirstStage),  // rank 7
+                ("west-indies",  Stage::FirstStage),  // rank 8
+                ("bangladesh",   Stage::FirstStage),  // rank 9
+                ("zimbabwe",     Stage::FirstStage),  // rank 10
             ],
         },
     ]

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTeams } from "@/lib/api";
 import { formatPoints, getRankMedal } from "@/lib/utils";
+import { TeamFlag } from "@/components/ui/team-flag";
 
 export const metadata: Metadata = {
   title: "Teams",
@@ -31,7 +32,7 @@ export default async function TeamsPage() {
             {/* Header */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-3xl leading-none">{team.flag_emoji}</span>
+                <TeamFlag slug={team.slug} name={team.name} size="md" />
                 <div>
                   <p className="font-bold text-slate-800 group-hover:text-pitch-700 transition-colors dark:text-neon-green/90 dark:group-hover:text-pitch-400">
                     {team.name}

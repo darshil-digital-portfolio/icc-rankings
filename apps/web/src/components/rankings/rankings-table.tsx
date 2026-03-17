@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { RankingEntry } from "@/types";
 import { cn, formatPoints, getRankMedal } from "@/lib/utils";
+import { TeamFlag } from "@/components/ui/team-flag";
 
 interface RankingsTableProps {
   data: RankingEntry[];
@@ -78,7 +79,7 @@ function RankingsRow({
 
       <td className="px-4 py-3">
         <Link href={`/teams/${entry.team_slug}`} className="flex items-center gap-3 group">
-          <span className="text-xl leading-none">{entry.flag_emoji}</span>
+          <TeamFlag slug={entry.team_slug} name={entry.team_name} size="sm" />
           <span className="font-semibold text-slate-800 group-hover:text-pitch-600 transition-colors dark:text-pitch-800 dark:group-hover:text-pitch-600">
             {entry.team_name}
           </span>

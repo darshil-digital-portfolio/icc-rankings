@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTeam, getTeamBreakdown } from "@/lib/api";
 import { formatPoints, STAGE_COLORS, EVENT_TYPE_CHART_COLORS } from "@/lib/utils";
+import { TeamFlag } from "@/components/ui/team-flag";
 import { TeamHistoryChart } from "@/components/teams/team-history-chart";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
@@ -55,7 +56,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
         <div className="bg-pitch-gradient px-8 py-10">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-6xl leading-none">{team.flag_emoji}</span>
+              <TeamFlag slug={team.slug} name={team.name} size="lg" />
               <div>
                 <h1 className="text-3xl font-bold text-white">{team.name}</h1>
                 <p className="text-pitch-200 font-mono text-lg">{team.short_name}</p>

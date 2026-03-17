@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getEvents } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react";
+import { TeamFlag } from "@/components/ui/team-flag";
 import type { EventType } from "@/types";
 
 export const metadata: Metadata = {
@@ -89,7 +90,9 @@ export default async function EventsPage() {
 
                     {event.champion_name && (
                       <div className="mt-3 flex items-center gap-2 rounded-lg bg-gold-50 px-2.5 py-2">
-                        <span className="text-sm">{event.champion_flag}</span>
+                        {event.champion_slug && (
+                          <TeamFlag slug={event.champion_slug} name={event.champion_name ?? ""} size="sm" />
+                        )}
                         <span className="text-xs font-bold text-gold-700">
                           {event.champion_name}
                         </span>

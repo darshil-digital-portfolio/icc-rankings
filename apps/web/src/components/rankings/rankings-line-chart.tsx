@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { TeamDetailResponse } from "@/types";
 import { getTeamColor } from "@/lib/utils";
+import { TeamFlag } from "@/components/ui/team-flag";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,7 +109,7 @@ function CustomTooltip({
           <div key={entry.dataKey} className="flex items-center justify-between gap-4 py-0.5">
             <span className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
               <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-              <span>{team?.flag_emoji}</span>
+              {team && <TeamFlag slug={team.slug} name={team.name} size="sm" />}
               <span>{team?.short_name ?? entry.dataKey}</span>
             </span>
             <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
@@ -134,7 +135,7 @@ function ChartLegend({ teams }: { teams: TeamDetailResponse[] }) {
       {teams.map((team) => (
         <span key={team.slug} className="inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-600">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: getTeamColor(team.slug) }} />
-          <span>{team.flag_emoji}</span>
+          <TeamFlag slug={team.slug} name={team.name} size="sm" />
           <span>{team.short_name}</span>
         </span>
       ))}
