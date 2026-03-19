@@ -1,10 +1,10 @@
-use axum::{extract::{Query, State}, Json};
-use bson::{doc, Document};
-use futures::TryStreamExt;
-use mongodb::options::AggregateOptions;
+use axum::{
+    extract::{Path, Query, State},
+    Json,
+};
 use serde::{Deserialize, Serialize};
 
-use crate::{db::DbState, error::AppResult, scoring::EventType};
+use crate::{db::DbState, error::{AppError, AppResult}};
 
 // ─── Query params ─────────────────────────────────────────────────────────────
 
@@ -52,132 +52,78 @@ pub struct RankingsMeta {
     pub offset: u32,
 }
 
+// ─── Row types ────────────────────────────────────────────────────────────────
+
+#[derive(sqlx::FromRow)]
+struct RankingRow {
+    team_slug: String,
+    team_name: String,
+    team_short_name: String,
+    flag_emoji: String,
+    total_points: Option<i64>,
+    events_participated: Option<i64>,
+    titles: Option<i64>,
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 /// `GET /api/v1/rankings`
-///
-/// Returns teams ordered by accumulated points descending.
-/// Optionally filtered by `event_type`.
 pub async fn get_rankings(
     State(state): State<DbState>,
     Query(params): Query<RankingsQuery>,
 ) -> AppResult<Json<RankingsResponse>> {
-    let db = &state.db;
+    let pool = &state.db;
 
-    // Build the optional event_type match stage.
-    let event_type_match: Document = if let Some(ref et) = params.event_type {
-        doc! { "$match": { "event_type": et } }
-    } else {
-        doc! { "$match": {} }
-    };
+    let rows = sqlx::query_as::<_, RankingRow>(
+        "SELECT t.slug AS team_slug, t.name AS team_name, t.short_name AS team_short_name,
+                t.flag_emoji,
+                SUM(er.total_points)::BIGINT AS total_points,
+                COUNT(er.id)::BIGINT AS events_participated,
+                SUM(CASE WHEN er.stage = 'champion' THEN 1 ELSE 0 END)::BIGINT AS titles
+         FROM event_results er
+         JOIN teams t ON t.slug = er.team_slug
+         LEFT JOIN events e ON e.id = er.event_id
+         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)
+         GROUP BY t.slug, t.name, t.short_name, t.flag_emoji
+         ORDER BY total_points DESC
+         LIMIT $2 OFFSET $3"
+    )
+    .bind(&params.event_type)
+    .bind(params.limit as i64)
+    .bind(params.offset as i64)
+    .fetch_all(pool)
+    .await?;
 
-    // Aggregation pipeline:
-    // 1. Join events to get event_type
-    // 2. Filter by event_type if provided
-    // 3. Group by team_id, summing points and counting titles
-    // 4. Join teams collection for metadata
-    // 5. Sort by total_points descending
-    let pipeline = vec![
-        // Join events
-        doc! {
-            "$lookup": {
-                "from": "events",
-                "localField": "event_id",
-                "foreignField": "_id",
-                "as": "event"
-            }
-        },
-        doc! { "$unwind": "$event" },
-        // Optional event_type filter
-        event_type_match,
-        // Group by team
-        doc! {
-            "$group": {
-                "_id": "$team_id",
-                "total_points": { "$sum": "$total_points" },
-                "events_participated": { "$sum": 1 },
-                "titles": {
-                    "$sum": {
-                        "$cond": [{ "$eq": ["$stage", "champion"] }, 1, 0]
-                    }
-                }
-            }
-        },
-        // Join team metadata
-        doc! {
-            "$lookup": {
-                "from": "teams",
-                "localField": "_id",
-                "foreignField": "_id",
-                "as": "team"
-            }
-        },
-        doc! { "$unwind": "$team" },
-        // Sort descending by points
-        doc! { "$sort": { "total_points": -1 } },
-        // Facet for total count + paginated data
-        doc! {
-            "$facet": {
-                "metadata": [{ "$count": "total" }],
-                "data": [
-                    { "$skip": params.offset as i64 },
-                    { "$limit": params.limit as i64 }
-                ]
-            }
-        },
-    ];
+    let total_row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(DISTINCT er.team_slug)::BIGINT
+         FROM event_results er
+         LEFT JOIN events e ON e.id = er.event_id
+         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)"
+    )
+    .bind(&params.event_type)
+    .fetch_one(pool)
+    .await?;
 
-    let collection = db.collection::<Document>("event_results");
-    let mut cursor = collection
-        .aggregate(pipeline)
-        .with_options(AggregateOptions::builder().allow_disk_use(true).build())
-        .await?;
-
-    let facet_doc = cursor.try_next().await?.unwrap_or_default();
-
-    let total = facet_doc
-        .get_array("metadata")
-        .ok()
-        .and_then(|m| m.first())
-        .and_then(|m| m.as_document())
-        .and_then(|m| m.get_i32("total").ok())
-        .unwrap_or(0) as u32;
-
-    let data_arr = facet_doc
-        .get_array("data")
-        .cloned()
-        .unwrap_or_default();
-
-    let mut entries: Vec<RankingEntry> = Vec::with_capacity(data_arr.len());
-    let empty_doc = Document::new();
-    for (i, bson_val) in data_arr.iter().enumerate() {
-        let doc = match bson_val.as_document() {
-            Some(d) => d,
-            None => continue,
-        };
-        let team = doc.get_document("team").unwrap_or(&empty_doc);
-
-        let entry = RankingEntry {
+    let entries: Vec<RankingEntry> = rows
+        .iter()
+        .enumerate()
+        .map(|(i, r)| RankingEntry {
             rank: params.offset + i as u32 + 1,
-            team_id: doc
-                .get_object_id("_id")
-                .map(|oid| oid.to_hex())
-                .unwrap_or_default(),
-            team_slug: team.get_str("slug").unwrap_or("").to_string(),
-            team_name: team.get_str("name").unwrap_or("").to_string(),
-            team_short_name: team.get_str("short_name").unwrap_or("").to_string(),
-            flag_emoji: team.get_str("flag_emoji").unwrap_or("").to_string(),
-            total_points: doc.get_i32("total_points").unwrap_or(0) as u32,
-            events_participated: doc.get_i32("events_participated").unwrap_or(0) as u32,
-            titles: doc.get_i32("titles").unwrap_or(0) as u32,
-        };
-        entries.push(entry);
-    }
+            team_id: r.team_slug.clone(),
+            team_slug: r.team_slug.clone(),
+            team_name: r.team_name.clone(),
+            team_short_name: r.team_short_name.clone(),
+            flag_emoji: r.flag_emoji.clone(),
+            total_points: r.total_points.unwrap_or(0) as u32,
+            events_participated: r.events_participated.unwrap_or(0) as u32,
+            titles: r.titles.unwrap_or(0) as u32,
+        })
+        .collect();
 
     Ok(Json(RankingsResponse {
         data: entries,
         meta: RankingsMeta {
-            total,
+            total: total_row.0 as u32,
             limit: params.limit,
             offset: params.offset,
         },
@@ -205,79 +151,67 @@ pub struct TeamBreakdownResponse {
     pub breakdown: Vec<BreakdownEntry>,
 }
 
+#[derive(sqlx::FromRow)]
+struct BreakdownRow {
+    event_type: String,
+    total_points: Option<i64>,
+    events_participated: Option<i64>,
+    titles: Option<i64>,
+}
+
 /// `GET /api/v1/rankings/team/:slug/breakdown`
 pub async fn get_team_breakdown(
     State(state): State<DbState>,
-    axum::extract::Path(slug): axum::extract::Path<String>,
+    Path(slug): Path<String>,
 ) -> AppResult<Json<TeamBreakdownResponse>> {
-    let db = &state.db;
-    let teams = db.collection::<Document>("teams");
+    let pool = &state.db;
 
-    // Find team by slug.
-    let team_doc = teams
-        .find_one(doc! { "slug": &slug })
-        .await?
-        .ok_or_else(|| crate::error::AppError::NotFound(format!("Team '{}' not found", slug)))?;
+    // Find team by slug
+    let team = sqlx::query_as::<_, crate::models::Team>(
+        "SELECT slug, name, short_name, flag_emoji, country_code FROM teams WHERE slug = $1"
+    )
+    .bind(&slug)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Team '{}' not found", slug)))?;
 
-    let team_id = team_doc.get_object_id("_id")?;
-    let team_name = team_doc.get_str("name").unwrap_or("").to_string();
-    let flag_emoji = team_doc.get_str("flag_emoji").unwrap_or("").to_string();
+    let rows = sqlx::query_as::<_, BreakdownRow>(
+        "SELECT e.event_type::TEXT,
+                SUM(er.total_points)::BIGINT AS total_points,
+                COUNT(er.id)::BIGINT AS events_participated,
+                SUM(CASE WHEN er.stage = 'champion' THEN 1 ELSE 0 END)::BIGINT AS titles
+         FROM event_results er
+         JOIN events e ON e.id = er.event_id
+         WHERE er.team_slug = $1
+         GROUP BY e.event_type
+         ORDER BY total_points DESC"
+    )
+    .bind(&slug)
+    .fetch_all(pool)
+    .await?;
 
-    let pipeline = vec![
-        doc! { "$match": { "team_id": team_id } },
-        doc! {
-            "$lookup": {
-                "from": "events",
-                "localField": "event_id",
-                "foreignField": "_id",
-                "as": "event"
-            }
-        },
-        doc! { "$unwind": "$event" },
-        doc! {
-            "$group": {
-                "_id": "$event.event_type",
-                "total_points": { "$sum": "$total_points" },
-                "events_participated": { "$sum": 1 },
-                "titles": {
-                    "$sum": {
-                        "$cond": [{ "$eq": ["$stage", "champion"] }, 1, 0]
-                    }
-                },
-                "multiplier": { "$first": { "$toInt": 1 } }
-            }
-        },
-        doc! { "$sort": { "total_points": -1 } },
-    ];
-
-    let collection = db.collection::<Document>("event_results");
-    let mut cursor = collection.aggregate(pipeline).await?;
-
-    let mut breakdown: Vec<BreakdownEntry> = Vec::new();
     let mut grand_total: u32 = 0;
-
-    while let Some(doc) = cursor.try_next().await? {
-        let et_str = doc.get_str("_id").unwrap_or("").to_string();
-        let pts = doc.get_i32("total_points").unwrap_or(0) as u32;
-        grand_total += pts;
-
-        // Determine label and multiplier from EventType.
-        let (label, mult) = event_type_meta(&et_str);
-
-        breakdown.push(BreakdownEntry {
-            event_type: et_str,
-            event_type_label: label.to_string(),
-            multiplier: mult,
-            total_points: pts,
-            events_participated: doc.get_i32("events_participated").unwrap_or(0) as u32,
-            titles: doc.get_i32("titles").unwrap_or(0) as u32,
-        });
-    }
+    let breakdown: Vec<BreakdownEntry> = rows
+        .iter()
+        .map(|r| {
+            let pts = r.total_points.unwrap_or(0) as u32;
+            grand_total += pts;
+            let (label, mult) = event_type_meta(&r.event_type);
+            BreakdownEntry {
+                event_type: r.event_type.clone(),
+                event_type_label: label.to_string(),
+                multiplier: mult,
+                total_points: pts,
+                events_participated: r.events_participated.unwrap_or(0) as u32,
+                titles: r.titles.unwrap_or(0) as u32,
+            }
+        })
+        .collect();
 
     Ok(Json(TeamBreakdownResponse {
         team_slug: slug,
-        team_name,
-        flag_emoji,
+        team_name: team.name,
+        flag_emoji: team.flag_emoji,
         grand_total,
         breakdown,
     }))

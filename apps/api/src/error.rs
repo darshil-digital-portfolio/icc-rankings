@@ -16,13 +16,7 @@ pub enum AppError {
     BadRequest(String),
 
     #[error("Database error: {0}")]
-    Database(#[from] mongodb::error::Error),
-
-    #[error("Serialisation error: {0}")]
-    Serialisation(#[from] bson::ser::Error),
-
-    #[error("Value access error: {0}")]
-    ValueAccess(#[from] bson::document::ValueAccessError),
+    Database(#[from] sqlx::Error),
 
     #[error("Internal server error: {0}")]
     Internal(#[from] anyhow::Error),
@@ -33,21 +27,18 @@ impl IntoResponse for AppError {
         let (status, code, message) = match &self {
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "BAD_REQUEST", msg.clone()),
-            AppError::Database(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "DATABASE_ERROR",
-                e.to_string(),
-            ),
-            AppError::Serialisation(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "SERIALISATION_ERROR",
-                e.to_string(),
-            ),
-            AppError::ValueAccess(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "VALUE_ACCESS_ERROR",
-                e.to_string(),
-            ),
+            AppError::Database(e) => {
+                // Map RowNotFound to 404
+                if matches!(e, sqlx::Error::RowNotFound) {
+                    (StatusCode::NOT_FOUND, "NOT_FOUND", "Resource not found".to_string())
+                } else {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "DATABASE_ERROR",
+                        e.to_string(),
+                    )
+                }
+            }
             AppError::Internal(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "INTERNAL_ERROR",

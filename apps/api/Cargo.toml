@@ -19,8 +19,7 @@ tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"]
 tokio = { version = "1", features = ["full"] }
 
 # ─── Database ────────────────────────────────────────────────────────────────
-mongodb = "3"
-bson = { version = "2", features = ["chrono-0_4"] }
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "macros"] }
 
 # ─── Serialisation ───────────────────────────────────────────────────────────
 serde = { version = "1", features = ["derive"] }
@@ -43,8 +42,6 @@ dotenvy = "0.15"
 # ─── HTTP status ─────────────────────────────────────────────────────────────
 http = "1"
 
-# ─── Async utilities ─────────────────────────────────────────────────────────
-futures = "0.3"
 
 [profile.release]
 opt-level = 3

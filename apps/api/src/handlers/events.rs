@@ -2,8 +2,6 @@ use axum::{
     extract::{Path, Query, State},
     Json,
 };
-use bson::{doc, Document};
-use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::{db::DbState, error::{AppError, AppResult}};
@@ -55,6 +53,22 @@ pub struct EventsMeta {
     pub offset: u32,
 }
 
+// ─── Row types ────────────────────────────────────────────────────────────────
+
+#[derive(sqlx::FromRow)]
+struct EventListRow {
+    id: i32,
+    name: String,
+    short_name: String,
+    event_type: String,
+    year: i16,
+    host: String,
+    teams_count: Option<i64>,
+    champion_slug: Option<String>,
+    champion_name: Option<String>,
+    champion_flag: Option<String>,
+}
+
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
 /// `GET /api/v1/events`
@@ -62,111 +76,70 @@ pub async fn list_events(
     State(state): State<DbState>,
     Query(params): Query<EventsQuery>,
 ) -> AppResult<Json<EventsResponse>> {
-    let db = &state.db;
+    let pool = &state.db;
 
-    let mut match_filter = doc! {};
-    if let Some(ref et) = params.event_type {
-        match_filter.insert("event_type", et.clone());
-    }
-    if let Some(yr) = params.year {
-        match_filter.insert("year", yr);
-    }
+    let rows = sqlx::query_as::<_, EventListRow>(
+        "SELECT e.id, e.name, e.short_name, e.event_type::TEXT, e.year, e.host,
+                COUNT(er.id)::BIGINT AS teams_count,
+                champ.team_slug   AS champion_slug,
+                t.name            AS champion_name,
+                t.flag_emoji      AS champion_flag
+         FROM events e
+         LEFT JOIN event_results er    ON er.event_id = e.id
+         LEFT JOIN event_results champ ON champ.event_id = e.id AND champ.stage = 'champion'
+         LEFT JOIN teams t             ON t.slug = champ.team_slug
+         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)
+           AND ($2::INT IS NULL OR e.year = $2::SMALLINT)
+         GROUP BY e.id, e.name, e.short_name, e.event_type, e.year, e.host,
+                  champ.team_slug, t.name, t.flag_emoji
+         ORDER BY e.year DESC
+         LIMIT $3 OFFSET $4"
+    )
+    .bind(&params.event_type)
+    .bind(params.year)
+    .bind(params.limit as i64)
+    .bind(params.offset as i64)
+    .fetch_all(pool)
+    .await?;
 
-    let pipeline = vec![
-        doc! { "$match": match_filter },
-        doc! { "$sort": { "year": -1 } },
-        doc! {
-            "$lookup": {
-                "from": "event_results",
-                "localField": "_id",
-                "foreignField": "event_id",
-                "as": "results"
+    let total_row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*)::BIGINT FROM events e
+         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)
+           AND ($2::INT IS NULL OR e.year = $2::SMALLINT)"
+    )
+    .bind(&params.event_type)
+    .bind(params.year)
+    .fetch_one(pool)
+    .await?;
+
+    let summaries: Vec<EventSummary> = rows
+        .iter()
+        .map(|r| {
+            let (label, mult) = event_type_meta(&r.event_type);
+            EventSummary {
+                id: r.id.to_string(),
+                name: r.name.clone(),
+                short_name: r.short_name.clone(),
+                event_type_label: label.to_string(),
+                event_type: r.event_type.clone(),
+                multiplier: mult,
+                year: r.year as i32,
+                host: r.host.clone(),
+                teams_count: r.teams_count.unwrap_or(0) as u32,
+                champion_slug: r.champion_slug.clone(),
+                champion_name: r.champion_name.clone(),
+                champion_flag: r.champion_flag.clone(),
             }
-        },
-        // Find the champion result
-        doc! {
-            "$addFields": {
-                "teams_count": { "$size": "$results" },
-                "champion_result": {
-                    "$arrayElemAt": [
-                        {
-                            "$filter": {
-                                "input": "$results",
-                                "as": "r",
-                                "cond": { "$eq": ["$$r.stage", "champion"] }
-                            }
-                        },
-                        0
-                    ]
-                }
-            }
-        },
-        // Join champion's team info
-        doc! {
-            "$lookup": {
-                "from": "teams",
-                "localField": "champion_result.team_id",
-                "foreignField": "_id",
-                "as": "champion_team"
-            }
-        },
-        doc! {
-            "$addFields": {
-                "champion_team": { "$arrayElemAt": ["$champion_team", 0] }
-            }
-        },
-        doc! {
-            "$facet": {
-                "metadata": [{ "$count": "total" }],
-                "data": [
-                    { "$skip": params.offset as i64 },
-                    { "$limit": params.limit as i64 }
-                ]
-            }
-        },
-    ];
-
-    let collection = db.collection::<Document>("events");
-    let mut cursor = collection.aggregate(pipeline).await?;
-    let facet = cursor.try_next().await?.unwrap_or_default();
-
-    let total = facet
-        .get_array("metadata").ok()
-        .and_then(|m| m.first()).and_then(|v| v.as_document())
-        .and_then(|d| d.get_i32("total").ok())
-        .unwrap_or(0) as u32;
-
-    let data_arr = facet.get_array("data").cloned().unwrap_or_default();
-    let mut summaries = Vec::with_capacity(data_arr.len());
-
-    for val in &data_arr {
-        let d = match val.as_document() {
-            Some(d) => d,
-            None => continue,
-        };
-        let et_str = d.get_str("event_type").unwrap_or("").to_string();
-        let (label, mult) = event_type_meta(&et_str);
-        let champ = d.get_document("champion_team").ok();
-
-        summaries.push(EventSummary {
-            id: d.get_object_id("_id").map(|o| o.to_hex()).unwrap_or_default(),
-            name: d.get_str("name").unwrap_or("").to_string(),
-            short_name: d.get_str("short_name").unwrap_or("").to_string(),
-            event_type_label: label.to_string(),
-            event_type: et_str,
-            multiplier: mult,
-            year: d.get_i32("year").unwrap_or(0),
-            host: d.get_str("host").unwrap_or("").to_string(),
-            teams_count: d.get_i32("teams_count").unwrap_or(0) as u32,
-            champion_slug: champ.and_then(|c| c.get_str("slug").ok()).map(str::to_string),
-            champion_name: champ.and_then(|c| c.get_str("name").ok()).map(str::to_string),
-            champion_flag: champ.and_then(|c| c.get_str("flag_emoji").ok()).map(str::to_string),
-        });
-    }
+        })
+        .collect();
 
     Ok(Json(EventsResponse {
         data: summaries,
-        meta: EventsMeta { total, limit: params.limit, offset: params.offset },
+        meta: EventsMeta {
+            total: total_row.0 as u32,
+            limit: params.limit,
+            offset: params.offset,
+        },
     }))
 }
 
@@ -199,71 +172,78 @@ pub struct EventDetailResponse {
     pub participants: Vec<ParticipantEntry>,
 }
 
+#[derive(sqlx::FromRow)]
+struct ParticipantRow {
+    team_slug: String,
+    team_name: String,
+    team_short_name: String,
+    flag_emoji: String,
+    stage: String,
+    base_points: i16,
+    multiplier: i16,
+    total_points: i16,
+}
+
 /// `GET /api/v1/events/:id`
 pub async fn get_event(
     State(state): State<DbState>,
     Path(id): Path<String>,
 ) -> AppResult<Json<EventDetailResponse>> {
-    let db = &state.db;
-    let events_col = db.collection::<Document>("events");
+    let pool = &state.db;
 
-    let oid = bson::oid::ObjectId::parse_str(&id)
+    let event_id: i32 = id
+        .parse()
         .map_err(|_| AppError::BadRequest(format!("'{}' is not a valid event ID", id)))?;
 
-    let event_doc = events_col
-        .find_one(doc! { "_id": oid })
-        .await?
-        .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", id)))?;
+    // Fetch event
+    let event = sqlx::query_as::<_, crate::models::Event>(
+        "SELECT id, name, short_name, event_type::TEXT, year, host FROM events WHERE id = $1"
+    )
+    .bind(event_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", id)))?;
 
-    let et_str = event_doc.get_str("event_type").unwrap_or("").to_string();
-    let (label, mult) = event_type_meta(&et_str);
+    let (label, mult) = event_type_meta(&event.event_type);
 
-    // Fetch results joined with teams, sorted by total_points descending.
-    let pipeline = vec![
-        doc! { "$match": { "event_id": oid } },
-        doc! {
-            "$lookup": {
-                "from": "teams",
-                "localField": "team_id",
-                "foreignField": "_id",
-                "as": "team"
-            }
-        },
-        doc! { "$unwind": "$team" },
-        doc! { "$sort": { "total_points": -1 } },
-    ];
+    // Fetch participants
+    let rows = sqlx::query_as::<_, ParticipantRow>(
+        "SELECT er.team_slug, t.name AS team_name, t.short_name AS team_short_name,
+                t.flag_emoji, er.stage::TEXT, er.base_points, er.multiplier, er.total_points
+         FROM event_results er
+         JOIN teams t ON t.slug = er.team_slug
+         WHERE er.event_id = $1
+         ORDER BY er.total_points DESC"
+    )
+    .bind(event_id)
+    .fetch_all(pool)
+    .await?;
 
-    let results_col = db.collection::<Document>("event_results");
-    let mut cursor = results_col.aggregate(pipeline).await?;
-    let mut participants: Vec<ParticipantEntry> = Vec::new();
-
-    while let Some(res) = cursor.try_next().await? {
-        let team = res.get_document("team").unwrap_or(&Document::new()).clone();
-        let stage_str = res.get_str("stage").unwrap_or("").to_string();
-
-        participants.push(ParticipantEntry {
-            team_id: team.get_object_id("_id").map(|o| o.to_hex()).unwrap_or_default(),
-            team_slug: team.get_str("slug").unwrap_or("").to_string(),
-            team_name: team.get_str("name").unwrap_or("").to_string(),
-            team_short_name: team.get_str("short_name").unwrap_or("").to_string(),
-            flag_emoji: team.get_str("flag_emoji").unwrap_or("").to_string(),
-            stage_label: stage_label(&stage_str).to_string(),
-            stage: stage_str,
-            base_points: res.get_i32("base_points").unwrap_or(0) as u32,
-            multiplier: res.get_i32("multiplier").unwrap_or(0) as u32,
-            total_points: res.get_i32("total_points").unwrap_or(0) as u32,
-        });
-    }
+    let participants: Vec<ParticipantEntry> = rows
+        .iter()
+        .map(|r| ParticipantEntry {
+            team_id: r.team_slug.clone(),
+            team_slug: r.team_slug.clone(),
+            team_name: r.team_name.clone(),
+            team_short_name: r.team_short_name.clone(),
+            flag_emoji: r.flag_emoji.clone(),
+            stage_label: stage_label(&r.stage).to_string(),
+            stage: r.stage.clone(),
+            base_points: r.base_points as u32,
+            multiplier: r.multiplier as u32,
+            total_points: r.total_points as u32,
+        })
+        .collect();
 
     Ok(Json(EventDetailResponse {
         id,
-        name: event_doc.get_str("name").unwrap_or("").to_string(),
-        short_name: event_doc.get_str("short_name").unwrap_or("").to_string(),
+        name: event.name,
+        short_name: event.short_name,
         event_type_label: label.to_string(),
-        event_type: et_str,
+        event_type: event.event_type,
         multiplier: mult,
-        year: event_doc.get_i32("year").unwrap_or(0),
-        host: event_doc.get_str("host").unwrap_or("").to_string(),
+        year: event.year as i32,
+        host: event.host,
         participants,
     }))
 }

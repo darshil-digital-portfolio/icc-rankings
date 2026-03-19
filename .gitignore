@@ -35,3 +35,4 @@ docker/data/
 
 # ─── Claude Code ──────────────────────────────────────────────────────────────
 .claude
+mongodb-compass*.deb

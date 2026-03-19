@@ -1,5 +1,24 @@
 services:
-  # ── MongoDB ────────────────────────────────────────────────────────────────
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: icc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: icc
+      POSTGRES_PASSWORD: icc_secret
+      POSTGRES_DB: icc_ranking
+    ports:
+      - "54321:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U icc -d icc_ranking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MongoDB (kept for future chat/session storage) ─────────────────────────
   mongo:
     image: mongo:7
     container_name: icc_mongo
@@ -27,14 +46,13 @@ services:
     ports:
       - "7429:7429"
     environment:
-      MONGODB_URI: mongodb://mongo:27017   # internal Docker network uses container port
-      MONGODB_DB: icc_ranking
+      DATABASE_URL: postgresql://icc:icc_secret@postgres:5432/icc_ranking
       API_HOST: 0.0.0.0
       API_PORT: 7429
       RUST_LOG: info
       SEED_ON_STARTUP: "true"
     depends_on:
-      mongo:
+      postgres:
         condition: service_healthy
 
   # ── Next.js Web ─────────────────────────────────────────────────────────────
@@ -55,4 +73,5 @@ services:
       - api
 
 volumes:
+  postgres_data:
   mongo_data:

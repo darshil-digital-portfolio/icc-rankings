@@ -3,20 +3,21 @@
 ## What this project is
 
 Full-stack ICC cricket tournament points tracker. Tracks cumulative team points
-across all ICC formats from 1973–2025. **Next.js 14** frontend + **Rust/Axum** API + **MongoDB**.
+across all ICC formats from 1973–2025. **Next.js 14** frontend + **Rust/Axum** API + **PostgreSQL** (primary) + **MongoDB** (kept for future chat/session storage).
 
 ```
 apps/
   web/    Next.js 14 (App Router, TypeScript, Tailwind CSS, Recharts, TanStack Query)
-  api/    Rust (Axum, MongoDB), historical seed data 1973-2025
-docker/   Docker Compose (mongo + api + web services)
+  api/    Rust (Axum, sqlx/PostgreSQL), historical seed data 1973-2025
+docker/   Docker Compose (postgres + mongo + api + web services)
 ```
 
 ## Running locally (3 terminals)
 
 ```bash
-# Terminal 1 — MongoDB (Docker)
-npm run docker:up
+# Terminal 1 — PostgreSQL + MongoDB (Docker or local)
+npm run docker:up        # starts both postgres + mongo via Docker
+# Or use local PostgreSQL on port 5432 with DATABASE_URL in apps/api/.env
 
 # Terminal 2 — Rust API  http://localhost:7429
 npm run dev:api
@@ -25,7 +26,7 @@ npm run dev:api
 npm run dev:web
 ```
 
-**Ports:** Web: 5237 · API: 7429 · MongoDB: 47017
+**Ports:** Web: 5237 · API: 7429 · PostgreSQL: 5432 (local) or 54321 (Docker) · MongoDB: 47017
 
 ## Web app conventions
 
@@ -67,9 +68,17 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 
 ## Database
 
-Collections: `teams`, `events`, `event_results`.
+**PostgreSQL** (primary): Tables: `teams`, `events`, `event_results`, `venues` (stub), `players` (stub).
 
-**Reset DB:** Stop API → connect to Mongo (`docker exec -it <container> mongosh`) → drop DB → restart API with `SEED_ON_STARTUP=true`.
+- Driver: `sqlx` with runtime string queries (not compile-time macros)
+- Migrations: `apps/api/migrations/` — run via `sqlx::migrate!()` on API startup
+- Connection: `DATABASE_URL` env var (default: `postgresql://icc:icc_secret@localhost:5432/icc_ranking`)
+- Enums: `event_type_enum`, `stage_enum` (Postgres-level enforcement)
+- `event_results.total_points` is a `GENERATED ALWAYS AS (base_points * multiplier) STORED` column
+
+**Reset DB:** `psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"` → restart API with `SEED_ON_STARTUP=true`.
+
+**MongoDB** (kept for future use): available on port 47017, no active application code uses it.
 
 ## Design tokens
 

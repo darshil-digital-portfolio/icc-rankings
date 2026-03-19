@@ -4,8 +4,7 @@ use std::env;
 /// Application configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub mongodb_uri: String,
-    pub mongodb_db: String,
+    pub database_url: String,
     pub host: String,
     pub port: u16,
     /// Whether to seed the database with historical ICC data on first startup.
@@ -18,10 +17,8 @@ impl Config {
         dotenvy::dotenv().ok(); // .env is optional (e.g. in Docker)
 
         Ok(Self {
-            mongodb_uri: env::var("MONGODB_URI")
-                .unwrap_or_else(|_| "mongodb://localhost:47017".into()),
-            mongodb_db: env::var("MONGODB_DB")
-                .unwrap_or_else(|_| "icc_ranking".into()),
+            database_url: env::var("DATABASE_URL")
+                .unwrap_or_else(|_| "postgresql://icc:icc_secret@localhost:5432/icc_ranking".into()),
             host: env::var("API_HOST")
                 .unwrap_or_else(|_| "0.0.0.0".into()),
             port: env::var("API_PORT")
