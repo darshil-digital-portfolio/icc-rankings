@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 /// - Champion    → 5
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::enum_variant_names)]
 pub enum Stage {
     /// Eliminated in the opening group / first round.
     FirstStage,
@@ -37,6 +38,7 @@ impl Stage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn label(self) -> &'static str {
         match self {
             Stage::FirstStage => "Group Stage",
@@ -88,6 +90,7 @@ impl EventType {
         }
     }
 
+    #[allow(dead_code)]
     pub fn label(self) -> &'static str {
         match self {
             EventType::WomenU19             => "Women's U19 World Cup",
@@ -102,6 +105,7 @@ impl EventType {
     }
 
     /// Gender tag used for UI filtering.
+    #[allow(dead_code)]
     pub fn gender(self) -> &'static str {
         match self {
             EventType::WomenU19 | EventType::WomenT20WorldCup | EventType::WomenWorldCup => "women",
@@ -121,6 +125,7 @@ impl EventType {
 /// ```
 /// points = stage.base_points() × event_type.multiplier()
 /// ```
+#[cfg(test)]
 pub fn calculate_points(stage: Stage, event_type: EventType) -> u32 {
     stage.base_points() * event_type.multiplier()
 }

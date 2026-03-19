@@ -1,40 +1,38 @@
 use anyhow::{Context, Result};
-use mongodb::{Client, Database, options::ClientOptions};
+use sqlx::postgres::{PgPool, PgPoolOptions};
 use tracing::info;
 
 use crate::config::Config;
 
-/// Establish a MongoDB connection and return the target database handle.
-pub async fn connect(config: &Config) -> Result<Database> {
-    let mut opts = ClientOptions::parse(&config.mongodb_uri)
+/// Establish a PostgreSQL connection pool and run migrations.
+pub async fn connect(config: &Config) -> Result<PgPool> {
+    let pool = PgPoolOptions::new()
+        .max_connections(10)
+        .connect(&config.database_url)
         .await
-        .context("Failed to parse MongoDB URI")?;
+        .context("Failed to connect to PostgreSQL – is it running?")?;
 
-    opts.app_name = Some("icc-ranking-api".into());
+    info!("Connected to PostgreSQL");
 
-    let client = Client::with_options(opts)
-        .context("Failed to create MongoDB client")?;
-
-    // Ping to verify connectivity.
-    client
-        .database("admin")
-        .run_command(bson::doc! { "ping": 1 })
+    // Run embedded migrations on startup.
+    sqlx::migrate!("./migrations")
+        .run(&pool)
         .await
-        .context("Failed to ping MongoDB – is it running?")?;
+        .context("Failed to run database migrations")?;
 
-    info!(db = %config.mongodb_db, "Connected to MongoDB");
+    info!("Migrations applied");
 
-    Ok(client.database(&config.mongodb_db))
+    Ok(pool)
 }
 
-/// Shared database handle passed through Axum's extension layer.
+/// Shared database handle passed through Axum's state layer.
 #[derive(Clone, Debug)]
 pub struct DbState {
-    pub db: Database,
+    pub db: PgPool,
 }
 
 impl DbState {
-    pub fn new(db: Database) -> Self {
+    pub fn new(db: PgPool) -> Self {
         Self { db }
     }
 }

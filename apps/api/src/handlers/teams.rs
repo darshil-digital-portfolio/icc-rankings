@@ -2,8 +2,6 @@ use axum::{
     extract::{Path, Query, State},
     Json,
 };
-use bson::{doc, Document};
-use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::{db::DbState, error::{AppError, AppResult}};
@@ -53,6 +51,20 @@ pub struct TeamsMeta {
     pub offset: u32,
 }
 
+// ─── Row types for sqlx ──────────────────────────────────────────────────────
+
+#[derive(sqlx::FromRow)]
+struct TeamRow {
+    slug: String,
+    name: String,
+    short_name: String,
+    flag_emoji: String,
+    country_code: String,
+    total_points: Option<i64>,
+    events_participated: Option<i64>,
+    titles: Option<i64>,
+}
+
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
 /// `GET /api/v1/teams`
@@ -60,88 +72,61 @@ pub async fn list_teams(
     State(state): State<DbState>,
     Query(params): Query<TeamsQuery>,
 ) -> AppResult<Json<TeamsResponse>> {
-    let db = &state.db;
+    let pool = &state.db;
 
-    let mut match_stage = doc! {};
-    if let Some(ref q) = params.q {
-        match_stage.insert("name", doc! { "$regex": q, "$options": "i" });
-    }
+    let search_pattern = params.q.as_deref().map(|q| format!("%{}%", q));
 
-    let pipeline = vec![
-        // Aggregate points from results
-        doc! {
-            "$lookup": {
-                "from": "event_results",
-                "localField": "_id",
-                "foreignField": "team_id",
-                "as": "results"
-            }
-        },
-        doc! {
-            "$addFields": {
-                "total_points": { "$sum": "$results.total_points" },
-                "events_participated": { "$size": "$results" },
-                "titles": {
-                    "$size": {
-                        "$filter": {
-                            "input": "$results",
-                            "as": "r",
-                            "cond": { "$eq": ["$$r.stage", "champion"] }
-                        }
-                    }
-                }
-            }
-        },
-        doc! { "$match": match_stage },
-        doc! { "$sort": { "total_points": -1 } },
-        doc! {
-            "$facet": {
-                "metadata": [{ "$count": "total" }],
-                "data": [
-                    { "$skip": params.offset as i64 },
-                    { "$limit": params.limit as i64 }
-                ]
-            }
-        },
-    ];
+    let rows = sqlx::query_as::<_, TeamRow>(
+        "SELECT t.slug, t.name, t.short_name, t.flag_emoji, t.country_code,
+                COALESCE(SUM(er.total_points), 0)::BIGINT AS total_points,
+                COUNT(er.id)::BIGINT AS events_participated,
+                SUM(CASE WHEN er.stage = 'champion' THEN 1 ELSE 0 END)::BIGINT AS titles
+         FROM teams t
+         LEFT JOIN event_results er ON er.team_slug = t.slug
+         WHERE ($1::TEXT IS NULL OR t.name ILIKE $1)
+         GROUP BY t.slug, t.name, t.short_name, t.flag_emoji, t.country_code
+         ORDER BY total_points DESC
+         LIMIT $2 OFFSET $3"
+    )
+    .bind(&search_pattern)
+    .bind(params.limit as i64)
+    .bind(params.offset as i64)
+    .fetch_all(pool)
+    .await?;
 
-    let collection = db.collection::<Document>("teams");
-    let mut cursor = collection.aggregate(pipeline).await?;
-    let facet_doc = cursor.try_next().await?.unwrap_or_default();
+    let total_row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(DISTINCT t.slug)::BIGINT
+         FROM teams t
+         WHERE ($1::TEXT IS NULL OR t.name ILIKE $1)"
+    )
+    .bind(&search_pattern)
+    .fetch_one(pool)
+    .await?;
 
-    let total = facet_doc
-        .get_array("metadata")
-        .ok()
-        .and_then(|m| m.first())
-        .and_then(|v| v.as_document())
-        .and_then(|d| d.get_i32("total").ok())
-        .unwrap_or(0) as u32;
-
-    let data_arr = facet_doc.get_array("data").cloned().unwrap_or_default();
-    let mut summaries = Vec::with_capacity(data_arr.len());
-
-    for (i, val) in data_arr.iter().enumerate() {
-        let d = match val.as_document() {
-            Some(d) => d,
-            None => continue,
-        };
-        summaries.push(TeamSummary {
-            id: d.get_object_id("_id").map(|o| o.to_hex()).unwrap_or_default(),
-            slug: d.get_str("slug").unwrap_or("").to_string(),
-            name: d.get_str("name").unwrap_or("").to_string(),
-            short_name: d.get_str("short_name").unwrap_or("").to_string(),
-            flag_emoji: d.get_str("flag_emoji").unwrap_or("").to_string(),
-            country_code: d.get_str("country_code").unwrap_or("").to_string(),
-            total_points: d.get_i32("total_points").unwrap_or(0) as u32,
-            events_participated: d.get_i32("events_participated").unwrap_or(0) as u32,
-            titles: d.get_i32("titles").unwrap_or(0) as u32,
+    let summaries: Vec<TeamSummary> = rows
+        .iter()
+        .enumerate()
+        .map(|(i, r)| TeamSummary {
+            id: r.slug.clone(),
+            slug: r.slug.clone(),
+            name: r.name.clone(),
+            short_name: r.short_name.clone(),
+            flag_emoji: r.flag_emoji.clone(),
+            country_code: r.country_code.clone(),
+            total_points: r.total_points.unwrap_or(0) as u32,
+            events_participated: r.events_participated.unwrap_or(0) as u32,
+            titles: r.titles.unwrap_or(0) as u32,
             rank: params.offset + i as u32 + 1,
-        });
-    }
+        })
+        .collect();
 
     Ok(Json(TeamsResponse {
         data: summaries,
-        meta: TeamsMeta { total, limit: params.limit, offset: params.offset },
+        meta: TeamsMeta {
+            total: total_row.0 as u32,
+            limit: params.limit,
+            offset: params.offset,
+        },
     }))
 }
 
@@ -177,77 +162,85 @@ pub struct TeamDetailResponse {
     pub history: Vec<EventHistoryEntry>,
 }
 
+#[derive(sqlx::FromRow)]
+struct HistoryRow {
+    event_id: i32,
+    event_name: String,
+    event_short_name: String,
+    event_type: String,
+    year: i16,
+    host: String,
+    stage: String,
+    base_points: i16,
+    multiplier: i16,
+    total_points: i16,
+}
+
 /// `GET /api/v1/teams/:slug`
 pub async fn get_team(
     State(state): State<DbState>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<TeamDetailResponse>> {
-    let db = &state.db;
-    let teams = db.collection::<Document>("teams");
+    let pool = &state.db;
 
-    let team_doc = teams
-        .find_one(doc! { "slug": &slug })
-        .await?
-        .ok_or_else(|| AppError::NotFound(format!("Team '{}' not found", slug)))?;
+    // Fetch team
+    let team = sqlx::query_as::<_, crate::models::Team>(
+        "SELECT slug, name, short_name, flag_emoji, country_code FROM teams WHERE slug = $1"
+    )
+    .bind(&slug)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Team '{}' not found", slug)))?;
 
-    let team_id = team_doc.get_object_id("_id")?;
+    // Fetch history
+    let rows = sqlx::query_as::<_, HistoryRow>(
+        "SELECT e.id AS event_id, e.name AS event_name, e.short_name AS event_short_name,
+                e.event_type::TEXT, e.year, e.host,
+                er.stage::TEXT, er.base_points, er.multiplier, er.total_points
+         FROM event_results er
+         JOIN events e ON e.id = er.event_id
+         WHERE er.team_slug = $1
+         ORDER BY e.year ASC"
+    )
+    .bind(&slug)
+    .fetch_all(pool)
+    .await?;
 
-    // Fetch all event results for this team, joined with events.
-    let pipeline = vec![
-        doc! { "$match": { "team_id": team_id } },
-        doc! {
-            "$lookup": {
-                "from": "events",
-                "localField": "event_id",
-                "foreignField": "_id",
-                "as": "event"
-            }
-        },
-        doc! { "$unwind": "$event" },
-        doc! { "$sort": { "event.year": 1 } },
-    ];
-
-    let results_col = db.collection::<Document>("event_results");
-    let mut cursor = results_col.aggregate(pipeline).await?;
-
-    let mut history: Vec<EventHistoryEntry> = Vec::new();
     let mut total_points: u32 = 0;
     let mut titles: u32 = 0;
 
-    while let Some(res) = cursor.try_next().await? {
-        let event = res.get_document("event").unwrap_or(&Document::new()).clone();
-        let pts = res.get_i32("total_points").unwrap_or(0) as u32;
-        let stage_str = res.get_str("stage").unwrap_or("").to_string();
-        let et_str = event.get_str("event_type").unwrap_or("").to_string();
-
-        total_points += pts;
-        if stage_str == "champion" {
-            titles += 1;
-        }
-
-        history.push(EventHistoryEntry {
-            event_id: event.get_object_id("_id").map(|o| o.to_hex()).unwrap_or_default(),
-            event_name: event.get_str("name").unwrap_or("").to_string(),
-            event_short_name: event.get_str("short_name").unwrap_or("").to_string(),
-            event_type_label: event_type_label(&et_str).to_string(),
-            event_type: et_str,
-            year: event.get_i32("year").unwrap_or(0),
-            host: event.get_str("host").unwrap_or("").to_string(),
-            stage_label: stage_label(&stage_str).to_string(),
-            stage: stage_str,
-            base_points: res.get_i32("base_points").unwrap_or(0) as u32,
-            multiplier: res.get_i32("multiplier").unwrap_or(0) as u32,
-            total_points: pts,
-        });
-    }
+    let history: Vec<EventHistoryEntry> = rows
+        .iter()
+        .map(|r| {
+            let pts = r.total_points as u32;
+            total_points += pts;
+            if r.stage == "champion" {
+                titles += 1;
+            }
+            EventHistoryEntry {
+                event_id: r.event_id.to_string(),
+                event_name: r.event_name.clone(),
+                event_short_name: r.event_short_name.clone(),
+                event_type_label: event_type_label(&r.event_type).to_string(),
+                event_type: r.event_type.clone(),
+                year: r.year as i32,
+                host: r.host.clone(),
+                stage_label: stage_label(&r.stage).to_string(),
+                stage: r.stage.clone(),
+                base_points: r.base_points as u32,
+                multiplier: r.multiplier as u32,
+                total_points: pts,
+            }
+        })
+        .collect();
 
     Ok(Json(TeamDetailResponse {
-        id: team_id.to_hex(),
-        slug: team_doc.get_str("slug").unwrap_or("").to_string(),
-        name: team_doc.get_str("name").unwrap_or("").to_string(),
-        short_name: team_doc.get_str("short_name").unwrap_or("").to_string(),
-        flag_emoji: team_doc.get_str("flag_emoji").unwrap_or("").to_string(),
-        country_code: team_doc.get_str("country_code").unwrap_or("").to_string(),
+        id: team.slug.clone(),
+        slug: team.slug,
+        name: team.name,
+        short_name: team.short_name,
+        flag_emoji: team.flag_emoji,
+        country_code: team.country_code,
         events_participated: history.len() as u32,
         titles,
         total_points,
