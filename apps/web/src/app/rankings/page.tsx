@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { getRankings, getTeams, getTeam } from "@/lib/api";
-import { RankingsTable } from "@/components/rankings/rankings-table";
-import { RankingsLineChart } from "@/components/rankings/rankings-line-chart";
+import { getTeams, getTeam } from "@/lib/api";
 import { EventTypeFilter } from "@/components/rankings/event-type-filter";
+import { RankingsClientView } from "@/components/rankings/rankings-client-view";
 
 export const metadata: Metadata = {
   title: "Rankings",
@@ -17,18 +16,16 @@ interface PageProps {
 export default async function RankingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const eventType = params.event_type;
+  const eventTypes = eventType ? eventType.split(",").filter(Boolean) : [];
 
-  // Rankings table data (filtered by event_type if set)
-  const response = await getRankings({ event_type: eventType, limit: 50 });
-
-  // All teams for the chart — fetch every team that has played at least once
+  // Fetch full history for every team that has played at least once.
+  // Both the chart and the table are computed client-side from this data.
   const allTeamsRes = await getTeams({ limit: 200 });
-  const slugsForChart = allTeamsRes.data
+  const slugs = allTeamsRes.data
     .filter((t) => t.events_participated > 0)
     .map((t) => t.slug);
 
-  // Fetch full history for every active team in parallel
-  const teamDetails = await Promise.all(slugsForChart.map((slug) => getTeam(slug)));
+  const teamDetails = await Promise.all(slugs.map((slug) => getTeam(slug)));
 
   return (
     <div className="container-page py-10">
@@ -83,21 +80,8 @@ export default async function RankingsPage({ searchParams }: PageProps) {
         <EventTypeFilter current={eventType} />
       </div>
 
-      {/* Results count */}
-      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-        {response.meta.total} team{response.meta.total !== 1 ? "s" : ""}
-        {eventType ? " for this event type" : " across all events"}
-      </p>
-
-      <div className="space-y-6">
-        {/* Line chart — all nations, cumulative points over time */}
-        {teamDetails.length > 0 && (
-          <RankingsLineChart teams={teamDetails} eventType={eventType} />
-        )}
-
-        {/* Rankings table */}
-        <RankingsTable data={response.data} />
-      </div>
+      {/* Chart + table — both computed client-side from teamDetails */}
+      <RankingsClientView teams={teamDetails} eventTypes={eventTypes} />
     </div>
   );
 }

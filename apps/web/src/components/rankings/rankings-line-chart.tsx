@@ -18,23 +18,24 @@ import { TeamFlag } from "@/components/ui/team-flag";
 
 interface RankingsLineChartProps {
   teams: TeamDetailResponse[];
-  eventType?: string;
+  eventTypes?: string[];
 }
 
 type ChartRow = Record<string, number>; // { year: number; [slug]: cumulativePoints }
 
 // ─── Build cumulative points per year ─────────────────────────────────────────
 
-function buildCumulativeData(teams: TeamDetailResponse[], eventType?: string): {
+function buildCumulativeData(teams: TeamDetailResponse[], eventTypes?: string[]): {
   rows: ChartRow[];
   activeSlugs: string[];
 } {
   const teamCheckpoints: Record<string, { year: number; cumulative: number }[]> = {};
 
   for (const team of teams) {
-    const history = eventType
-      ? team.history.filter((h) => h.event_type === eventType)
-      : team.history;
+    const history =
+      eventTypes && eventTypes.length > 0
+        ? team.history.filter((h) => eventTypes.includes(h.event_type))
+        : team.history;
 
     if (history.length === 0) continue; // skip teams with no matching history
 
@@ -145,8 +146,8 @@ function ChartLegend({ teams }: { teams: TeamDetailResponse[] }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function RankingsLineChart({ teams, eventType }: RankingsLineChartProps) {
-  const { rows, activeSlugs } = buildCumulativeData(teams, eventType);
+export function RankingsLineChart({ teams, eventTypes }: RankingsLineChartProps) {
+  const { rows, activeSlugs } = buildCumulativeData(teams, eventTypes);
 
   // Map slug → team for tooltip lookup
   const teamMap = Object.fromEntries(teams.map((t) => [t.slug, t]));

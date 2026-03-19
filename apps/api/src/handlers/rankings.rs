@@ -74,6 +74,12 @@ pub async fn get_rankings(
 ) -> AppResult<Json<RankingsResponse>> {
     let pool = &state.db;
 
+    // Parse comma-separated event types into a Vec for SQL array binding.
+    // None = no filter (all formats); Some(vec) = filter to those types.
+    let event_types: Option<Vec<String>> = params.event_type
+        .as_deref()
+        .map(|s| s.split(',').filter(|t| !t.is_empty()).map(str::to_owned).collect());
+
     let rows = sqlx::query_as::<_, RankingRow>(
         "SELECT t.slug AS team_slug, t.name AS team_name, t.short_name AS team_short_name,
                 t.flag_emoji,
@@ -83,12 +89,12 @@ pub async fn get_rankings(
          FROM event_results er
          JOIN teams t ON t.slug = er.team_slug
          LEFT JOIN events e ON e.id = er.event_id
-         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)
+         WHERE ($1::TEXT[] IS NULL OR e.event_type::TEXT = ANY($1::TEXT[]))
          GROUP BY t.slug, t.name, t.short_name, t.flag_emoji
          ORDER BY total_points DESC
          LIMIT $2 OFFSET $3"
     )
-    .bind(&params.event_type)
+    .bind(&event_types)
     .bind(params.limit as i64)
     .bind(params.offset as i64)
     .fetch_all(pool)
@@ -98,9 +104,9 @@ pub async fn get_rankings(
         "SELECT COUNT(DISTINCT er.team_slug)::BIGINT
          FROM event_results er
          LEFT JOIN events e ON e.id = er.event_id
-         WHERE ($1::TEXT IS NULL OR e.event_type::TEXT = $1)"
+         WHERE ($1::TEXT[] IS NULL OR e.event_type::TEXT = ANY($1::TEXT[]))"
     )
-    .bind(&params.event_type)
+    .bind(&event_types)
     .fetch_one(pool)
     .await?;
 
