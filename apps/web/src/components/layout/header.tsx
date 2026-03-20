@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { TrophyIcon, Menu, X } from "lucide-react";
+import { TrophyIcon, Menu, X, MessageCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState } from "react";
 
@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/rankings", label: "Rankings" },
   { href: "/teams", label: "Teams" },
   { href: "/events", label: "Events" },
+  { href: "/chat", label: "Twelfth Man", icon: true },
 ] as const;
 
 export function Header() {
@@ -51,8 +52,10 @@ export function Header() {
                     active
                       ? "bg-white/15 text-white"
                       : "text-pitch-100 hover:bg-white/10 hover:text-white",
+                    "icon" in link && "flex items-center gap-1.5",
                   )}
                 >
+                  {"icon" in link && <MessageCircle className="h-3.5 w-3.5" />}
                   {link.label}
                 </Link>
               );
@@ -92,8 +95,10 @@ export function Header() {
                     active
                       ? "bg-white/15 text-white"
                       : "text-pitch-100 hover:bg-white/10 hover:text-white",
+                    "icon" in link && "flex items-center gap-1.5",
                   )}
                 >
+                  {"icon" in link && <MessageCircle className="h-3.5 w-3.5" />}
                   {link.label}
                 </Link>
               );
