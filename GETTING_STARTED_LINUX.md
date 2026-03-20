@@ -172,7 +172,7 @@ Unlike Python, you do **not** pre-install Rust packages manually.
 ### Step 4 — Set up the Twelfth Man chatbot (Python)
 
 ```bash
-cd ai_chatbot
+cd apps/chatbot
 
 # Create a virtual environment using uv
 uv venv env-chatbot --python 3.12
@@ -269,7 +269,7 @@ Open **http://localhost:5237** in your browser.
 ### Terminal 4 — Twelfth Man AI Chatbot
 
 ```bash
-cd ai_chatbot
+cd apps/chatbot
 source env-chatbot/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
 ```
@@ -319,7 +319,7 @@ Browser  →  http://localhost:5237
 
 - **Next.js** — the frontend. Pages are in `apps/web/src/app/` (including `/chat`).
 - **Rust API** — the backend. Routes are in `apps/api/src/handlers/`.
-- **Twelfth Man** — AI chatbot. LangGraph agents in `ai_chatbot/app/graph/`.
+- **Twelfth Man** — AI chatbot. LangGraph agents in `apps/chatbot/app/graph/`.
 - **PostgreSQL** — primary database. Tables: `teams`, `events`, `event_results`.
 - **MongoDB** — stores chatbot conversation history.
 
@@ -350,7 +350,7 @@ Browser  →  http://localhost:5237
 | TypeScript type check | `npm run type-check` |
 | Lint | `npm run lint` |
 
-### Twelfth Man chatbot (run from `ai_chatbot/`)
+### Twelfth Man chatbot (run from `apps/chatbot/`)
 
 | What | Command |
 |---|---|
@@ -403,7 +403,7 @@ psql postgresql://icc:icc_secret@localhost:5432/icc_ranking -f docker/init-reado
 | `cargo run` sits compiling for 5 min | First-time compile — normal | Wait, do not interrupt |
 | `Connection refused :7429` | API not running | Start Terminal 2 |
 | `Connection refused :8100` | Chatbot not running | Start Terminal 4 |
-| `ANTHROPIC_API_KEY` error | Missing API key | Edit `ai_chatbot/.env` and set your key |
+| `ANTHROPIC_API_KEY` error | Missing API key | Edit `apps/chatbot/.env` and set your key |
 | `uv: command not found` | uv not installed | Run `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | PostgreSQL connection refused | Docker not running | Run `npm run docker:up` and wait for healthy |
 | `npm: command not found` | Node.js not installed | Install via NodeSource (Section 2B) |
@@ -436,7 +436,7 @@ icc_ranking/
 │           │   └── chat/     ← chat message, chart, view components
 │           ├── lib/          ← API client, chatbot client, utilities
 │           └── types/        ← TypeScript types (like Pydantic, read-only)
-├── ai_chatbot/               ← Python chatbot service (YOU ARE HERE if Python dev)
+├── apps/chatbot/               ← Python chatbot service (YOU ARE HERE if Python dev)
 │   ├── app/
 │   │   ├── main.py           ← FastAPI entry point
 │   │   ├── config.py         ← settings (reads .env)

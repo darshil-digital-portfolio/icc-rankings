@@ -76,7 +76,7 @@ services:
   # ── Twelfth Man AI Chatbot (Python/LangGraph) ───────────────────────────────
   chatbot:
     build:
-      context: ../ai_chatbot
+      context: ../apps/chatbot
       dockerfile: ../docker/Dockerfile.chatbot
     container_name: icc_chatbot
     restart: unless-stopped

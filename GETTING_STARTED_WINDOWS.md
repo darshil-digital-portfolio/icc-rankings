@@ -125,7 +125,7 @@ Unlike Python, you do **not** pre-install Rust packages manually.
 ### Step 4 — Set up the Twelfth Man chatbot (Python)
 
 ```powershell
-cd ai_chatbot
+cd apps/chatbot
 
 # Create a virtual environment using uv
 uv venv env-chatbot --python 3.12
@@ -226,7 +226,7 @@ Open **http://localhost:5237** in your browser.
 ### Terminal 4 — Twelfth Man AI Chatbot
 
 ```powershell
-cd ai_chatbot
+cd apps/chatbot
 env-chatbot\Scripts\activate
 uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
 ```

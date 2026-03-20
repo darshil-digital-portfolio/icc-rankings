@@ -9,7 +9,7 @@ across all ICC formats from 1973–2025. **Next.js 14** frontend + **Rust/Axum**
 apps/
   web/        Next.js 14 (App Router, TypeScript, Tailwind CSS, Recharts, TanStack Query)
   api/        Rust (Axum, sqlx/PostgreSQL), historical seed data 1973-2025
-ai_chatbot/   Python (FastAPI, LangGraph, Claude API) — "Twelfth Man" AI assistant
+apps/chatbot/   Python (FastAPI, LangGraph, Claude API) — "Twelfth Man" AI assistant
 docker/       Docker Compose (postgres + mongo + api + web + chatbot services)
 ```
 
@@ -27,7 +27,7 @@ npm run dev:api
 npm run dev:web
 
 # Terminal 4 — Twelfth Man chatbot  http://localhost:8100
-cd ai_chatbot && source env-chatbot/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
+cd apps/chatbot && source env-chatbot/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
 # Or from project root: npm run dev:chatbot
 ```
 
@@ -89,7 +89,7 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 - Collection: `conversations` (indexed by `session_id`)
 - Retention: 90 days (auto-cleanup on chatbot startup)
 
-## Chatbot conventions (ai_chatbot/)
+## Chatbot conventions (apps/chatbot/)
 
 - **Framework:** FastAPI + LangGraph + Claude API (via `langchain-anthropic`)
 - **Models:** Haiku (router, formatter — cheap) · Sonnet (SQL agent, analytics — accurate)
@@ -99,7 +99,7 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 - **Analytics:** Pandas code generation + sandboxed execution (restricted builtins, no I/O)
 - **Chat history:** MongoDB `conversations` collection, keyed by anonymous session UUID
 - **Frontend:** `/chat` route, `react-markdown` for rendering, Recharts for agent-generated charts
-- **Config:** `ai_chatbot/.env` — requires `ANTHROPIC_API_KEY`
+- **Config:** `apps/chatbot/.env` — requires `ANTHROPIC_API_KEY`
 
 ## Design tokens
 

@@ -73,7 +73,7 @@ icc_ranking/
 │           ├── components/  # UI components (including chat/)
 │           ├── lib/         # API client, chatbot client, utilities
 │           └── types/
-├── ai_chatbot/              # Python / LangGraph AI chatbot
+├── apps/chatbot/              # Python / LangGraph AI chatbot
 │   ├── app/
 │   │   ├── main.py          # FastAPI server
 │   │   ├── graph/           # LangGraph agents (router, sql, analytics, formatter)
@@ -154,7 +154,7 @@ npm run dev:api
 npm run dev:web
 
 # Terminal 4 — Twelfth Man chatbot (activate venv first)
-cd ai_chatbot && source env-chatbot/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
+cd apps/chatbot && source env-chatbot/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
 ```
 
 Open **http://localhost:5237** — the main site.
