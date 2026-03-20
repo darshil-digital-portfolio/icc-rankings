@@ -3,16 +3,17 @@
 ## What this project is
 
 Full-stack ICC cricket tournament points tracker. Tracks cumulative team points
-across all ICC formats from 1973–2025. **Next.js 14** frontend + **Rust/Axum** API + **PostgreSQL** (primary) + **MongoDB** (kept for future chat/session storage).
+across all ICC formats from 1973–2025. **Next.js 14** frontend + **Rust/Axum** API + **Python/LangGraph** AI chatbot + **PostgreSQL** (primary) + **MongoDB** (chat history).
 
 ```
 apps/
-  web/    Next.js 14 (App Router, TypeScript, Tailwind CSS, Recharts, TanStack Query)
-  api/    Rust (Axum, sqlx/PostgreSQL), historical seed data 1973-2025
-docker/   Docker Compose (postgres + mongo + api + web services)
+  web/        Next.js 14 (App Router, TypeScript, Tailwind CSS, Recharts, TanStack Query)
+  api/        Rust (Axum, sqlx/PostgreSQL), historical seed data 1973-2025
+ai_chatbot/   Python (FastAPI, LangGraph, Claude API) — "Twelfth Man" AI assistant
+docker/       Docker Compose (postgres + mongo + api + web + chatbot services)
 ```
 
-## Running locally (3 terminals)
+## Running locally (4 terminals)
 
 ```bash
 # Terminal 1 — PostgreSQL + MongoDB (Docker or local)
@@ -24,9 +25,13 @@ npm run dev:api
 
 # Terminal 3 — Next.js web  http://localhost:5237
 npm run dev:web
+
+# Terminal 4 — Twelfth Man chatbot  http://localhost:8100
+cd ai_chatbot && source env-chatbot/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
+# Or from project root: npm run dev:chatbot
 ```
 
-**Ports:** Web: 5237 · API: 7429 · PostgreSQL: 5432 (local) or 54321 (Docker) · MongoDB: 47017
+**Ports:** Web: 5237 · API: 7429 · Chatbot: 8100 · PostgreSQL: 5432 (local) or 54321 (Docker) · MongoDB: 47017
 
 ## Web app conventions
 
@@ -78,7 +83,23 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 
 **Reset DB:** `psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"` → restart API with `SEED_ON_STARTUP=true`.
 
-**MongoDB** (kept for future use): available on port 47017, no active application code uses it.
+**MongoDB** (chat history): Used by the Twelfth Man chatbot for persistent conversation history. Available on port 47017.
+
+- Driver: `motor` (async) in the Python chatbot service
+- Collection: `conversations` (indexed by `session_id`)
+- Retention: 90 days (auto-cleanup on chatbot startup)
+
+## Chatbot conventions (ai_chatbot/)
+
+- **Framework:** FastAPI + LangGraph + Claude API (via `langchain-anthropic`)
+- **Models:** Haiku (router, formatter — cheap) · Sonnet (SQL agent, analytics — accurate)
+- **Graph flow:** Router → SQL Agent | Analytics | Clarifier | Greeting | Off-topic → Formatter
+- **DB access:** Read-only PostgreSQL user (`icc_readonly`), enforced at DB level + SQL validator
+- **Guardrails:** SQL validation (SELECT-only, row limits, timeout), topic relevance via schema-aware routing
+- **Analytics:** Pandas code generation + sandboxed execution (restricted builtins, no I/O)
+- **Chat history:** MongoDB `conversations` collection, keyed by anonymous session UUID
+- **Frontend:** `/chat` route, `react-markdown` for rendering, Recharts for agent-generated charts
+- **Config:** `ai_chatbot/.env` — requires `ANTHROPIC_API_KEY`
 
 ## Design tokens
 
