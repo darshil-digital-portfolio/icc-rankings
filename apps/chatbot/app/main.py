@@ -44,9 +44,10 @@ async def lifespan(app: FastAPI):
         logger.info("Cleaned up %d expired conversations", deleted)
 
     logger.info(
-        "Twelfth Man ready on %s:%d (router=%s, sql=%s)",
+        "Twelfth Man ready on %s:%d [%s] (router=%s, sql=%s)",
         settings.host,
         settings.port,
+        settings.app_env,
         settings.router_model,
         settings.sql_model,
     )

@@ -1,4 +1,8 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+HAIKU = "claude-haiku-4-5-20251001"
+SONNET = "claude-sonnet-4-20250514"
 
 
 class Settings(BaseSettings):
@@ -18,11 +22,14 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8100
 
-    # LLM models
-    router_model: str = "claude-haiku-4-5-20251001"
-    sql_model: str = "claude-sonnet-4-20250514"
-    analytics_model: str = "claude-sonnet-4-20250514"
-    formatter_model: str = "claude-haiku-4-5-20251001"
+    # Environment — controls default model tier
+    app_env: str = "development"  # "development" | "production"
+
+    # LLM models — empty string means "use env-based default"
+    router_model: str = ""
+    sql_model: str = ""
+    analytics_model: str = ""
+    formatter_model: str = ""
 
     # Guardrails
     max_query_rows: int = 100
@@ -33,6 +40,19 @@ class Settings(BaseSettings):
     history_retention_days: int = 90
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @model_validator(mode="after")
+    def _apply_env_model_defaults(self) -> "Settings":
+        is_prod = self.app_env == "production"
+        if not self.router_model:
+            self.router_model = HAIKU
+        if not self.sql_model:
+            self.sql_model = SONNET if is_prod else HAIKU
+        if not self.analytics_model:
+            self.analytics_model = SONNET if is_prod else HAIKU
+        if not self.formatter_model:
+            self.formatter_model = HAIKU
+        return self
 
 
 settings = Settings()
