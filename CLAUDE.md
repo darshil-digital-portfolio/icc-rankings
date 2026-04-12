@@ -83,10 +83,13 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 
 **Reset DB:** `psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"` → restart API with `SEED_ON_STARTUP=true`.
 
-**MongoDB** (chat history): Used by the Twelfth Man chatbot for persistent conversation history. Available on port 47017.
+**MongoDB** (chat history + users): Used by the Twelfth Man chatbot. Available on port 47017.
 
 - Driver: `motor` (async) in the Python chatbot service
-- Collection: `conversations` (indexed by `session_id`)
+- `conversations` collection: indexed by `session_id` (unique) + `updated_at` + `user_id`
+- `users` collection: indexed by `google_sub` (unique); stores preferences, `is_admin`, detects new vs returning users via `_is_new` sentinel in `$setOnInsert`
+- Session IDs are always UUIDs (never `google_sub`). Active session stored in `localStorage["twelfth_man_active_session"]`
+- Conversations tagged with `user_id` (google_sub) when user is authenticated — enables per-user session listing
 - Retention: 90 days (auto-cleanup on chatbot startup)
 
 ## Chatbot conventions (apps/chatbot/)
@@ -97,9 +100,17 @@ Multiplier: Women's U19(1×) → Men's World Cup(8×)
 - **DB access:** Read-only PostgreSQL user (`icc_readonly`), enforced at DB level + SQL validator
 - **Guardrails:** SQL validation (SELECT-only, row limits, timeout), topic relevance via schema-aware routing
 - **Analytics:** Pandas code generation + sandboxed execution (restricted builtins, no I/O)
-- **Chat history:** MongoDB `conversations` collection, keyed by anonymous session UUID
-- **Frontend:** `/chat` route, `react-markdown` for rendering, Recharts for agent-generated charts
+- **Chat history:** Multi-session; `GET /api/users/sessions` (service-token protected) lists a user's sessions newest first
+- **Frontend:** `/chat` route (auth-gated), personalised welcome/welcome-back in chat; `ChatHistoryPanel` sidebar for session switching
 - **Config:** `apps/chatbot/.env` — requires `ANTHROPIC_API_KEY`
+
+## Auth conventions
+
+- `/chat` and `/admin/*` are protected by `middleware.ts` — unauthenticated users are redirected to sign-in
+- Sign-in (from header) redirects to `/?welcome=1` after success; `WelcomeBanner` shows personalised greeting
+- Sign-out always redirects to `/` (home) — no sign-in prompt
+- `is_new_user` and `is_admin` are baked into the JWT at sign-in and available as `session.user.is_new_user` / `session.user.is_admin`
+- See `docs/auth-architecture.md` for the full auth flow diagram
 
 ## Design tokens
 
