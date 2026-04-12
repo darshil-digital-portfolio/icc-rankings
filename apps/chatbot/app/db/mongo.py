@@ -31,6 +31,8 @@ async def init_mongo() -> None:
     coll = _db[CONVERSATIONS_COLLECTION]
     await coll.create_index("session_id", unique=True)
     await coll.create_index("updated_at")
+    # user_id index for listing sessions per user
+    await coll.create_index("user_id")
 
     # Users indexes
     users = _db[USERS_COLLECTION]
@@ -64,6 +66,7 @@ async def append_message(
     role: str,
     text: str,
     chart: dict[str, Any] | None = None,
+    user_id: str | None = None,
 ) -> None:
     coll = _get_collection()
     message = {
@@ -72,12 +75,16 @@ async def append_message(
         "chart": chart,
         "timestamp": datetime.now(timezone.utc),
     }
+    set_on_insert: dict[str, Any] = {"created_at": datetime.now(timezone.utc)}
+    if user_id:
+        set_on_insert["user_id"] = user_id
+
     await coll.update_one(
         {"session_id": session_id},
         {
             "$push": {"messages": message},
             "$set": {"updated_at": datetime.now(timezone.utc)},
-            "$setOnInsert": {"created_at": datetime.now(timezone.utc)},
+            "$setOnInsert": set_on_insert,
         },
         upsert=True,
     )
@@ -100,3 +107,19 @@ async def cleanup_old_conversations() -> int:
     cutoff = datetime.now(timezone.utc) - timedelta(days=settings.history_retention_days)
     result = await coll.delete_many({"updated_at": {"$lt": cutoff}})
     return result.deleted_count
+
+
+async def get_user_sessions(
+    user_id: str, limit: int = 20
+) -> list[dict[str, Any]]:
+    """Return up to `limit` conversation summaries for a user, newest first.
+
+    Only fetches the first message per session to use as a preview.
+    """
+    coll = _get_collection()
+    cursor = coll.find(
+        {"user_id": user_id},
+        {"session_id": 1, "messages": {"$slice": 1}, "updated_at": 1},
+    )
+    cursor = cursor.sort("updated_at", -1).limit(limit)
+    return await cursor.to_list(length=limit)

@@ -4,10 +4,13 @@ All routes require a valid X-Service-Token header — they are only intended to
 be called from the Next.js server (never directly from the browser).
 """
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 
+from app.db.mongo import get_user_sessions
 from app.db.users import get_or_create_user, get_user, update_preferences
-from app.models import UpdatePreferencesRequest, UserPreferences, UserProfile
+from app.models import SessionSummary, UpdatePreferencesRequest, UserPreferences, UserProfile
 from app.routers.auth_middleware import verify_service_token
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -86,3 +89,32 @@ async def admin_check(
         raise HTTPException(status_code=400, detail="X-User-Sub header is required")
     doc = await get_user(x_user_sub)
     return {"is_admin": doc.get("is_admin", False) if doc else False}
+
+
+@router.get(
+    "/sessions",
+    response_model=list[SessionSummary],
+    dependencies=[Depends(verify_service_token)],
+)
+async def list_user_sessions(
+    x_user_sub: str | None = Header(None, alias="X-User-Sub"),
+    limit: int = 20,
+) -> list[SessionSummary]:
+    """Return the authenticated user's conversation sessions, newest first."""
+    if not x_user_sub:
+        raise HTTPException(status_code=400, detail="X-User-Sub header is required")
+    raw = await get_user_sessions(x_user_sub, limit=limit)
+    summaries = []
+    for doc in raw:
+        messages = doc.get("messages", [])
+        # Find first user message for preview
+        preview = next(
+            (m["text"] for m in messages if m.get("role") == "user"),
+            "Empty conversation",
+        )
+        summaries.append(SessionSummary(
+            session_id=doc["session_id"],
+            preview=preview[:80],
+            updated_at=doc.get("updated_at", datetime.now(timezone.utc)),
+        ))
+    return summaries

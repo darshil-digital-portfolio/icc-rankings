@@ -113,7 +113,7 @@ async def chat(request: ChatRequest):
     user_message = request.message.strip()
 
     # Save user message to history.
-    await append_message(session_id, "user", user_message)
+    await append_message(session_id, "user", user_message, user_id=request.user_id)
 
     # Load recent conversation history for context.
     recent = await get_recent_messages(
@@ -158,6 +158,7 @@ async def chat(request: ChatRequest):
         "assistant",
         response_text,
         chart=chart_spec,
+        user_id=request.user_id,
     )
 
     return ChatResponse(

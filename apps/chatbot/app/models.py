@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     session_id: str = Field(..., min_length=1, max_length=128)
+    user_id: str | None = Field(None, max_length=256)
 
 
 class ChartSpec(BaseModel):
@@ -36,6 +37,12 @@ class HistoryMessage(BaseModel):
 class HistoryResponse(BaseModel):
     session_id: str
     messages: list[HistoryMessage]
+
+
+class SessionSummary(BaseModel):
+    session_id: str
+    preview: str          # first user message text, truncated
+    updated_at: datetime
 
 
 # ─── User / preferences models ────────────────────────────────────────────────
