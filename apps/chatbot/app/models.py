@@ -53,6 +53,7 @@ class UserProfile(BaseModel):
     picture: str
     preferences: UserPreferences
     is_admin: bool
+    is_new_user: bool = False
 
 
 class UpdatePreferencesRequest(BaseModel):

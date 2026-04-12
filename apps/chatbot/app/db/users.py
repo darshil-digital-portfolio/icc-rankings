@@ -21,7 +21,10 @@ async def get_or_create_user(
     name: str,
     picture: str,
 ) -> dict[str, Any]:
-    """Upsert a user by google_sub and return the full document (after)."""
+    """Upsert a user by google_sub and return the full document (after).
+
+    Adds a synthetic `is_new_user` key: True when this is the first sign-in.
+    """
     coll = _get_collection()
     now = datetime.now(timezone.utc)
     doc = await coll.find_one_and_update(
@@ -38,11 +41,15 @@ async def get_or_create_user(
                 "preferences": {"theme": None, "event_filters": []},
                 "is_admin": False,
                 "created_at": now,
+                "_is_new": True,
             },
         },
         upsert=True,
         return_document=ReturnDocument.AFTER,
     )
+    is_new = bool(doc.get("_is_new", False))  # type: ignore[union-attr]
+    doc.pop("_is_new", None)  # type: ignore[union-attr]
+    doc["is_new_user"] = is_new  # type: ignore[index]
     return doc  # type: ignore[return-value]
 
 

@@ -25,6 +25,7 @@ def _doc_to_profile(doc: dict) -> UserProfile:  # type: ignore[type-arg]
             event_filters=prefs.get("event_filters") or [],
         ),
         is_admin=doc.get("is_admin", False),
+        is_new_user=doc.get("is_new_user", False),
     )
 
 
