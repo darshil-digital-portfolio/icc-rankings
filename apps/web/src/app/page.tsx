@@ -29,14 +29,7 @@ export default async function HomePage() {
       <section className="bg-pitch-gradient">
         <div className="container-page py-20 sm:py-28">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-gold-400/10 px-4 py-1.5">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-gold-400" />
-              <span className="text-xs font-semibold text-gold-300 uppercase tracking-wider">
-                Phase 1 · Historical Data 1973–2025
-              </span>
-            </div>
-
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+<h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
               ICC Team Rankings
             </h1>
             <p className="mt-5 text-lg text-pitch-200">

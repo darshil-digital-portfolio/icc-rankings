@@ -17,9 +17,7 @@ export function Footer() {
             <Link href="/events" className="hover:text-pitch-700 transition-colors">Events</Link>
           </nav>
 
-          <p className="text-xs text-slate-400">
-            Phase 1 · Data through 2025 · Non-commercial
-          </p>
+
         </div>
       </div>
     </footer>
