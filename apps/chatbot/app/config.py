@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     max_query_rows: int = 100
     query_timeout_seconds: int = 5
 
+    # Service-to-service auth (PSK between Next.js and this service)
+    service_api_token: str = ""
+
     # Conversation
     context_window_messages: int = 10
     history_retention_days: int = 90

@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { TrophyIcon, Menu, X, MessageCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -18,6 +20,7 @@ const NAV_LINKS = [
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   return (
     <header className="sticky top-0 z-50 border-b border-pitch-900/20 bg-pitch-gradient shadow-md">
@@ -62,16 +65,61 @@ export function Header() {
             })}
           </nav>
 
-          {/* Theme toggle + Mobile burger */}
+          {/* Auth + Theme toggle + Mobile burger */}
           <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <button
-            className="flex items-center justify-center rounded-lg p-2 text-white hover:bg-white/10 md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            {/* Auth section — desktop only */}
+            <div className="hidden items-center gap-2 md:flex">
+              {status === "loading" && (
+                <div className="h-8 w-20 animate-pulse rounded-lg bg-white/10" />
+              )}
+
+              {status === "authenticated" && session && (
+                <>
+                  {session.user.is_admin && (
+                    <span className="rounded-full bg-gold-500 px-2 py-0.5 text-xs font-bold text-pitch-950">
+                      Admin
+                    </span>
+                  )}
+                  <span className="max-w-[120px] truncate text-sm font-medium text-pitch-100">
+                    {session.user.name}
+                  </span>
+                  {session.user.image && (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name ?? "User avatar"}
+                      width={32}
+                      height={32}
+                      className="rounded-full ring-2 ring-white/20"
+                    />
+                  )}
+                  <button
+                    onClick={() => signOut()}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+
+              {status === "unauthenticated" && (
+                <button
+                  onClick={() => signIn("google")}
+                  className="rounded-lg px-3.5 py-2 text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Sign in
+                </button>
+              )}
+            </div>
+
+            <ThemeToggle />
+
+            <button
+              className="flex items-center justify-center rounded-lg p-2 text-white hover:bg-white/10 md:hidden"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
       </div>
@@ -103,6 +151,26 @@ export function Header() {
                 </Link>
               );
             })}
+
+            {/* Mobile auth */}
+            <div className="mt-1 border-t border-white/10 pt-2">
+              {status === "authenticated" && session && (
+                <button
+                  onClick={() => { signOut(); setMobileOpen(false); }}
+                  className="w-full rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Sign out ({session.user.name})
+                </button>
+              )}
+              {status === "unauthenticated" && (
+                <button
+                  onClick={() => { signIn("google"); setMobileOpen(false); }}
+                  className="w-full rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Sign in with Google
+                </button>
+              )}
+            </div>
           </nav>
         </div>
       )}

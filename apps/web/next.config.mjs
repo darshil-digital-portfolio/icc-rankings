@@ -4,7 +4,12 @@ const nextConfig = {
   // Required for Docker standalone builds.
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+    ],
   },
   // Expose only NEXT_PUBLIC_ variables at build time.
   env: {

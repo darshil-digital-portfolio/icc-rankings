@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, Trash2, MessageCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   getSessionId,
@@ -42,15 +43,20 @@ export function ChatView() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { data: session, status: sessionStatus } = useSession();
 
   // Scroll to bottom when messages change.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Load session and history on mount.
+  // Load session and history once auth status has resolved.
   useEffect(() => {
-    const sid = getSessionId();
+    if (sessionStatus === "loading" || historyLoaded) return;
+
+    const googleSub =
+      sessionStatus === "authenticated" ? session?.user?.google_sub : undefined;
+    const sid = getSessionId(googleSub);
     setSessionId(sid);
 
     getHistory(sid)
@@ -70,7 +76,7 @@ export function ChatView() {
         // No history — keep welcome message.
       })
       .finally(() => setHistoryLoaded(true));
-  }, []);
+  }, [sessionStatus, session?.user?.google_sub, historyLoaded]);
 
   const handleSend = useCallback(
     async (text?: string) => {

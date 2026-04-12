@@ -21,6 +21,7 @@ from app.db.mongo import (
 from app.db.postgres import close_pool, init_pool
 from app.graph.graph import get_graph
 from app.models import ChatRequest, ChatResponse, HistoryMessage, HistoryResponse
+from app.routers.users import router as users_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,6 +79,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(users_router)
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -165,6 +168,36 @@ async def chat(request: ChatRequest):
     )
 
 
+def _normalize_chart(raw: Any) -> dict | None:
+    """Normalize a stored chart dict to the current ChartSpec shape.
+
+    Old format: {type, title, labels: [...], values: [...], orientation}
+    New format: {chart_type, data: [{x_key: ..., y_key: ...}], x_key, y_key, title}
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        return None
+    # Already in new format — has required fields
+    if "chart_type" in raw and "data" in raw and isinstance(raw["data"], list):
+        return raw
+    # Legacy format migration
+    labels = raw.get("labels", [])
+    values = raw.get("values", [])
+    if not isinstance(labels, list) or not isinstance(values, list):
+        return None
+    data = [{"label": lbl, "value": val} for lbl, val in zip(labels, values)]
+    return {
+        "chart_type": raw.get("type", "bar"),
+        "data": data,
+        "x_key": "label",
+        "y_key": "value",
+        "title": raw.get("title", ""),
+        "x_label": raw.get("x_label", ""),
+        "y_label": raw.get("y_label", ""),
+    }
+
+
 @app.get("/history/{session_id}", response_model=HistoryResponse)
 async def get_history(session_id: str):
     """Retrieve conversation history for a session."""
@@ -176,7 +209,7 @@ async def get_history(session_id: str):
             HistoryMessage(
                 role=msg["role"],
                 text=msg["text"],
-                chart=msg.get("chart"),
+                chart=_normalize_chart(msg.get("chart")),
                 timestamp=msg["timestamp"],
             )
             for msg in messages

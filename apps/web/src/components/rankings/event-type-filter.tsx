@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { updateUserPreferences } from "@/lib/user-api";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { EventType } from "@/types";
 
 const EVENT_TYPES: { value: EventType; label: string; mult: number }[] = [
@@ -22,11 +26,29 @@ interface EventTypeFilterProps {
 
 export function EventTypeFilter({ current }: EventTypeFilterProps) {
   const router = useRouter();
+  const { status } = useSession();
+  const { data: preferences } = useUserPreferences();
+  const hasRedirected = useRef(false);
 
   const selected = new Set(
     current ? current.split(",").filter(Boolean) : [],
   );
   const allSelected = selected.size === 0;
+
+  // On initial page load: if authenticated, no URL filter is set, and the user
+  // has saved filters, redirect to restore them.
+  useEffect(() => {
+    if (
+      !hasRedirected.current &&
+      status === "authenticated" &&
+      preferences &&
+      preferences.preferences.event_filters.length > 0 &&
+      !current
+    ) {
+      hasRedirected.current = true;
+      router.push(`/rankings?event_type=${preferences.preferences.event_filters.join(",")}`);
+    }
+  }, [status, preferences, current, router]);
 
   function toggle(value: string) {
     const next = new Set(selected);
@@ -37,10 +59,20 @@ export function EventTypeFilter({ current }: EventTypeFilterProps) {
     }
     const joined = [...next].join(",");
     router.push(joined ? `/rankings?event_type=${joined}` : "/rankings");
+
+    // Persist selection for authenticated users (fire-and-forget).
+    if (status === "authenticated") {
+      updateUserPreferences({ event_filters: [...next] }).catch(() => {});
+    }
   }
 
   function clearAll() {
     router.push("/rankings");
+
+    // Persist cleared selection for authenticated users (fire-and-forget).
+    if (status === "authenticated") {
+      updateUserPreferences({ event_filters: [] }).catch(() => {});
+    }
   }
 
   return (

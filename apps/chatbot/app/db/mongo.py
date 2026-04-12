@@ -12,6 +12,14 @@ _client: AsyncIOMotorClient | None = None  # type: ignore[type-arg]
 _db: AsyncIOMotorDatabase | None = None  # type: ignore[type-arg]
 
 CONVERSATIONS_COLLECTION = "conversations"
+USERS_COLLECTION = "users"
+
+
+def get_db() -> AsyncIOMotorDatabase:  # type: ignore[type-arg]
+    """Return the active Motor database; raises if not yet initialised."""
+    if _db is None:
+        raise RuntimeError("MongoDB not initialised")
+    return _db
 
 
 async def init_mongo() -> None:
@@ -19,10 +27,14 @@ async def init_mongo() -> None:
     _client = AsyncIOMotorClient(settings.mongo_url)
     _db = _client[settings.mongo_db]
 
-    # Create indexes
+    # Conversations indexes
     coll = _db[CONVERSATIONS_COLLECTION]
     await coll.create_index("session_id", unique=True)
     await coll.create_index("updated_at")
+
+    # Users indexes
+    users = _db[USERS_COLLECTION]
+    await users.create_index("google_sub", unique=True)
 
     logger.info("MongoDB connection initialised")
 

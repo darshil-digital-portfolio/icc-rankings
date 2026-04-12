@@ -40,8 +40,17 @@ export interface HistoryResponse {
 
 const SESSION_KEY = "twelfth_man_session_id";
 
-export function getSessionId(): string {
+/**
+ * Returns the session ID to use for the chat.
+ *
+ * - When `googleSub` is provided (authenticated user), the Google sub is used
+ *   as the session key so chat history is tied to the user's identity across
+ *   devices.
+ * - Otherwise falls back to an anonymous UUID stored in localStorage.
+ */
+export function getSessionId(googleSub?: string): string {
   if (typeof window === "undefined") return "";
+  if (googleSub) return googleSub;
   let sessionId = localStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     sessionId = crypto.randomUUID();

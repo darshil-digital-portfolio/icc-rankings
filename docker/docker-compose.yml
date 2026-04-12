@@ -70,6 +70,12 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://api:7429
       PORT: 5237
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:5237}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
+      INTERNAL_CHATBOT_URL: http://chatbot:8100
     depends_on:
       - api
 
@@ -89,6 +95,7 @@ services:
       MONGO_DB: icc_ranking
       HOST: 0.0.0.0
       PORT: 8100
+      SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
     depends_on:
       postgres:
         condition: service_healthy

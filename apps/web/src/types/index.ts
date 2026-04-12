@@ -156,6 +156,22 @@ export interface TeamBreakdownResponse {
   breakdown: BreakdownEntry[];
 }
 
+// ─── User preferences ─────────────────────────────────────────────────────────
+
+export interface UserPreferences {
+  theme: "dark" | "light" | null;
+  event_filters: string[];
+}
+
+export interface UserProfile {
+  google_sub: string;
+  email: string;
+  name: string;
+  picture: string;
+  preferences: UserPreferences;
+  is_admin: boolean;
+}
+
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
 export interface ApiError {
