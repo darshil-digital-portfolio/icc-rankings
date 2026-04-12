@@ -17,7 +17,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, account, profile, trigger }) {
-      // On initial sign-in, upsert user in Python service and embed is_admin.
       if (trigger === "signIn" && account?.provider === "google" && profile) {
         token.google_sub = profile.sub as string | undefined;
         try {
@@ -27,20 +26,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               "X-User-Sub": (profile.sub ?? "") as string,
               "X-User-Email": (profile.email ?? "") as string,
               "X-User-Name": (profile.name ?? "") as string,
-              // `picture` is on the Google profile but not on the base Profile type
               "X-User-Picture": (
                 (profile as Record<string, unknown>).picture ?? ""
               ) as string,
             },
           });
           if (res.ok) {
-            const user = (await res.json()) as { is_admin?: boolean };
+            const user = (await res.json()) as {
+              is_admin?: boolean;
+              is_new_user?: boolean;
+            };
             token.is_admin = user.is_admin ?? false;
+            token.is_new_user = user.is_new_user ?? false;
           } else {
             token.is_admin = false;
+            token.is_new_user = false;
           }
         } catch {
           token.is_admin = false;
+          token.is_new_user = false;
         }
       }
       return token;
@@ -48,6 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user.google_sub = (token.google_sub ?? "") as string;
       session.user.is_admin = (token.is_admin ?? false) as boolean;
+      session.user.is_new_user = (token.is_new_user ?? false) as boolean;
       return session;
     },
   },
