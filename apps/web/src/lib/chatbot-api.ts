@@ -3,7 +3,8 @@
  */
 
 const CHATBOT_BASE_URL =
-  process.env.NEXT_PUBLIC_CHATBOT_URL?.replace(/\/$/, "") ?? "http://localhost:8100";
+  process.env.NEXT_PUBLIC_CHATBOT_URL?.replace(/\/$/, "") ??
+  "http://localhost:8100";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,27 +37,52 @@ export interface HistoryResponse {
   messages: HistoryMessage[];
 }
 
+export interface SessionSummary {
+  session_id: string;
+  preview: string;
+  updated_at: string;
+}
+
 // ─── Session management ───────────────────────────────────────────────────────
 
-const SESSION_KEY = "twelfth_man_session_id";
+const ACTIVE_SESSION_KEY = "twelfth_man_active_session";
 
 /**
- * Returns the session ID to use for the chat.
+ * Returns the active session ID for an authenticated user.
  *
- * - When `googleSub` is provided (authenticated user), the Google sub is used
- *   as the session key so chat history is tied to the user's identity across
- *   devices.
- * - Otherwise falls back to an anonymous UUID stored in localStorage.
+ * - Reads from localStorage key `twelfth_man_active_session`.
+ * - If none exists (first visit), creates a new UUID session.
+ *
+ * NOTE: The session_id is now always a UUID — NOT the google_sub.
+ * The google_sub is sent separately as user_id to tag ownership server-side.
  */
-export function getSessionId(googleSub?: string): string {
+export function getSessionId(): string {
   if (typeof window === "undefined") return "";
-  if (googleSub) return googleSub;
-  let sessionId = localStorage.getItem(SESSION_KEY);
+  let sessionId = localStorage.getItem(ACTIVE_SESSION_KEY);
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    localStorage.setItem(SESSION_KEY, sessionId);
+    localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
   }
   return sessionId;
+}
+
+/**
+ * Start a brand-new session, returning its ID.
+ */
+export function createNewSession(): string {
+  if (typeof window === "undefined") return "";
+  const sessionId = crypto.randomUUID();
+  localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
+  return sessionId;
+}
+
+/**
+ * Switch to a specific past session (load it as active).
+ */
+export function setActiveSession(sessionId: string): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
+  }
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
@@ -64,11 +90,12 @@ export function getSessionId(googleSub?: string): string {
 export async function sendMessage(
   message: string,
   sessionId: string,
+  userId?: string,
 ): Promise<ChatResponse> {
   const res = await fetch(`${CHATBOT_BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, session_id: sessionId }),
+    body: JSON.stringify({ message, session_id: sessionId, user_id: userId }),
   });
 
   if (!res.ok) {
@@ -79,9 +106,7 @@ export async function sendMessage(
   return res.json() as Promise<ChatResponse>;
 }
 
-export async function getHistory(
-  sessionId: string,
-): Promise<HistoryResponse> {
+export async function getHistory(sessionId: string): Promise<HistoryResponse> {
   const res = await fetch(`${CHATBOT_BASE_URL}/history/${sessionId}`);
 
   if (!res.ok) {
@@ -92,4 +117,14 @@ export async function getHistory(
   }
 
   return res.json() as Promise<HistoryResponse>;
+}
+
+/**
+ * Fetch the authenticated user's past sessions via the Next.js proxy route.
+ * Must be called from a client component — uses session cookies automatically.
+ */
+export async function getUserSessions(): Promise<SessionSummary[]> {
+  const res = await fetch("/api/chat/sessions");
+  if (!res.ok) return [];
+  return res.json() as Promise<SessionSummary[]>;
 }
