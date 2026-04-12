@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { getRankings, getEvents } from "@/lib/api";
 import { formatPoints, EVENT_TYPE_LABELS } from "@/lib/utils";
 import { TrophyIcon, BarChart3Icon, CalendarIcon, UsersIcon, ArrowRightIcon } from "lucide-react";
 import type { EventType } from "@/types";
+import { WelcomeBanner } from "@/components/home/welcome-banner";
 
 // Revalidate the home page every 5 minutes
 export const revalidate = 300;
@@ -18,6 +20,11 @@ export default async function HomePage() {
 
   return (
     <div>
+      {/* ── Welcome banner (shown after sign-in via ?welcome=1) ─────────── */}
+      <Suspense>
+        <WelcomeBanner />
+      </Suspense>
+
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="bg-pitch-gradient">
         <div className="container-page py-20 sm:py-28">

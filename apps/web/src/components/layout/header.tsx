@@ -93,7 +93,7 @@ export function Header() {
                     />
                   )}
                   <button
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                     className="rounded-lg px-3 py-1.5 text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
                   >
                     Sign out
@@ -103,7 +103,7 @@ export function Header() {
 
               {status === "unauthenticated" && (
                 <button
-                  onClick={() => signIn("google")}
+                  onClick={() => signIn("google", { callbackUrl: "/?welcome=1" })}
                   className="rounded-lg px-3.5 py-2 text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Sign in
@@ -156,7 +156,7 @@ export function Header() {
             <div className="mt-1 border-t border-white/10 pt-2">
               {status === "authenticated" && session && (
                 <button
-                  onClick={() => { signOut(); setMobileOpen(false); }}
+                  onClick={() => { signOut({ callbackUrl: "/" }); setMobileOpen(false); }}
                   className="w-full rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Sign out ({session.user.name})
@@ -164,7 +164,7 @@ export function Header() {
               )}
               {status === "unauthenticated" && (
                 <button
-                  onClick={() => { signIn("google"); setMobileOpen(false); }}
+                  onClick={() => { signIn("google", { callbackUrl: "/?welcome=1" }); setMobileOpen(false); }}
                   className="w-full rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-pitch-100 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Sign in with Google
