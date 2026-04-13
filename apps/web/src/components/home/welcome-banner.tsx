@@ -28,6 +28,17 @@ export function WelcomeBanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldShow]);
 
+  // Warm up the chatbot Lambda on every sign-in.
+  // By the time the user navigates to /chat, the cold start is done.
+  useEffect(() => {
+    if (!shouldShow) return;
+    const chatbotUrl = process.env.NEXT_PUBLIC_CHATBOT_URL ?? "http://localhost:8100";
+    fetch(`${chatbotUrl}/health`, {
+      method: "GET",
+      signal: AbortSignal.timeout(30_000),
+    }).catch(() => {});
+  }, [shouldShow]);
+
   function dismiss() {
     setVisible(false);
     // Strip the ?welcome=1 param without adding a history entry.
