@@ -21,6 +21,25 @@ tfenv install 1.9.0 && tfenv use 1.9.0
 terraform --version  # 1.9.0
 ```
 
+## How Terraform Runs (Manual, Not Automated)
+
+For this project you run Terraform commands yourself from your terminal — it is not
+triggered automatically by git pushes or any CI/CD pipeline.
+
+You'll do this maybe 2–3 times total:
+1. **Once** to create all the infrastructure (Lambda, ECR, DynamoDB)
+2. **Occasionally** if you change a config (e.g. bump Lambda memory)
+3. **Once** if you ever tear it down
+
+This is why `terraform-deployer` has CLI access keys configured locally via
+`aws configure` — your terminal needs to authenticate to AWS when you run these
+commands. The `terraform apply` step always prompts for a manual `yes` before
+touching anything, so you stay in control.
+
+> **Why not automate it?** Automating Terraform via GitHub Actions (using OIDC, no
+> long-lived keys) is cleaner at scale, but overkill here. Infra changes are rare
+> and you want to review the plan before applying. Manual is the right call.
+
 ## First Run
 
 ```bash
