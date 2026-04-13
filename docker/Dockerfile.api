@@ -21,6 +21,10 @@ RUN touch src/main.rs && cargo build --release
 # ── Runtime stage ──────────────────────────────────────────────────────────────
 FROM debian:bookworm-slim AS runtime
 
+# Lambda Web Adapter: translates Lambda invocation events → HTTP → your Axum app
+COPY --from=public.ecr.aws/awsguru/aws-lambda-web-adapter:0.8.4 \
+     /lambda-adapter /opt/extensions/lambda-adapter
+
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -31,5 +35,7 @@ COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 7429
 ENV RUST_LOG=info
+# PORT tells Lambda Web Adapter which port to forward requests to
+ENV PORT=7429
 
 CMD ["./api"]
