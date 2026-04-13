@@ -23,8 +23,16 @@ const EVENT_TYPE_BADGE_COLORS: Record<string, string> = {
 };
 
 export default async function EventsPage() {
-  const response = await getEvents({ limit: 200 });
-  const events = response.data;
+  let events: Awaited<ReturnType<typeof getEvents>>["data"] = [];
+  let total = 0;
+
+  try {
+    const response = await getEvents({ limit: 200 });
+    events = response.data;
+    total = response.meta.total;
+  } catch {
+    // API unavailable at build time
+  }
 
   // Group by event type for better UX
   const groups = groupByEventType(events);
@@ -34,7 +42,7 @@ export default async function EventsPage() {
       <div className="mb-8">
         <h1 className="section-heading">ICC Tournaments</h1>
         <p className="mt-2 text-slate-500">
-          {response.meta.total} tournaments across all formats, 1973–2025.
+          {total > 0 ? `${total} tournaments across all formats, 1973–2025.` : "Tournaments across all formats, 1973–2025."}
         </p>
       </div>
 

@@ -10,15 +10,23 @@ export const metadata: Metadata = {
 };
 
 export default async function TeamsPage() {
-  const response = await getTeams({ limit: 100 });
-  const teams = response.data;
+  let teams: Awaited<ReturnType<typeof getTeams>>["data"] = [];
+  let total = 0;
+
+  try {
+    const response = await getTeams({ limit: 100 });
+    teams = response.data;
+    total = response.meta.total;
+  } catch {
+    // API unavailable at build time
+  }
 
   return (
     <div className="container-page py-10">
       <div className="mb-8">
         <h1 className="section-heading">ICC Member Nations</h1>
         <p className="mt-2 text-slate-500">
-          {response.meta.total} nations ranked by total accumulated ICC points.
+          {total > 0 ? `${total} nations ranked by total accumulated ICC points.` : "Nations ranked by total accumulated ICC points."}
         </p>
       </div>
 

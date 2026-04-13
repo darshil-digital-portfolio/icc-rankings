@@ -14,7 +14,7 @@ import type {
 } from "@/types";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:7429";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:7429";
 
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────
 

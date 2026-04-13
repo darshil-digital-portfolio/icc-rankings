@@ -10,13 +10,19 @@ import { WelcomeBanner } from "@/components/home/welcome-banner";
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [rankings, events] = await Promise.all([
-    getRankings({ limit: 5 }),
-    getEvents({ limit: 5 }),
-  ]);
+  let top5: Awaited<ReturnType<typeof getRankings>>["data"] = [];
+  let recentEvents: Awaited<ReturnType<typeof getEvents>>["data"] = [];
 
-  const top5 = rankings.data;
-  const recentEvents = events.data;
+  try {
+    const [rankings, events] = await Promise.all([
+      getRankings({ limit: 5 }),
+      getEvents({ limit: 5 }),
+    ]);
+    top5 = rankings.data;
+    recentEvents = events.data;
+  } catch {
+    // API unavailable at build time — pages will hydrate via ISR once API is live
+  }
 
   return (
     <div>
