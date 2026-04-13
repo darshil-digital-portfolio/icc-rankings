@@ -27,7 +27,8 @@ Go to https://neon.tech → **Sign Up** (use GitHub or Google — no credit card
 - Click **New Project**
 - Name: `icc-rankings`
 - PostgreSQL version: **16**
-- Region: **US East (us-east-1)** ← matches your AWS region
+- Region: **Asia Pacific (Singapore) (ap-southeast-1)** ← closest to India
+- Skip neon auth
 - Click **Create Project**
 
 ### 3. Get Your Connection Strings
@@ -54,20 +55,15 @@ Save both strings — you'll add them to `terraform.tfvars`.
 In the Neon Console → **SQL Editor**, run:
 
 ```sql
--- Create the main database (Neon creates one by default named after the project)
--- If it's not called icc_ranking, rename it:
--- ALTER DATABASE neondb RENAME TO icc_ranking;
-
+-- Neon's default database is called "neondb" — use it as-is.
 -- Create read-only role for the chatbot (mirrors docker/init-readonly-user.sql)
 DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'icc_readonly') THEN
-    CREATE ROLE icc_readonly LOGIN PASSWORD 'icc_readonly_secret';
-  END IF;
-END
+
+CREATE ROLE icc_readonly LOGIN PASSWORD 'icc_readonly_secret';
+
 $$;
 
-GRANT CONNECT ON DATABASE icc_ranking TO icc_readonly;
+GRANT CONNECT ON DATABASE neondb TO icc_readonly;
 GRANT USAGE ON SCHEMA public TO icc_readonly;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO icc_readonly;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO icc_readonly;
@@ -86,7 +82,7 @@ Get the `dev` branch connection string for your local `.env` files.
 
 Build the read-only pooled URL manually:
 ```
-postgresql://icc_readonly:icc_readonly_secret@<host>-pooler.neon.tech/icc_ranking?sslmode=require
+postgresql://icc_readonly:icc_readonly_secret@<host>-pooler.neon.tech/neondb?sslmode=require
 ```
 This goes into `neon_readonly_database_url` in `terraform.tfvars` (used by the chatbot).
 
