@@ -28,33 +28,57 @@ Console → top-right account menu → **Security credentials**
 4. Alert at 80% → your email address
 5. Also enable: **Billing preferences** → **Receive Free Tier Usage Alerts**
 
-## 4. Create an IAM User for Terraform (programmatic access)
+## 4. Create an IAM User Group
 
-1. IAM → **Users** → **Create user**
-2. Username: `terraform-deployer`
-3. Do NOT enable console access
-4. Permissions: attach **AdministratorAccess** (simplest for initial setup)
-5. After creation → **Security credentials** tab → **Create access key**
-6. Choose **Command Line Interface (CLI)** → download the CSV
+Rather than attaching policies directly to users, attach them to a group — then add
+users to the group. One policy change updates everyone in the group.
+
+1. IAM → **User groups** → **Create group**
+2. Group name: `Administrators`
+3. Attach policy: **AdministratorAccess**
+4. Click **Create group**
+
+> **AdministratorAccess vs root:** Not the same. Root bypasses IAM entirely and can
+> close the account, change payment details, and cannot be restricted by any policy.
+> `AdministratorAccess` is a normal IAM policy — full service access, but it goes
+> through IAM, can be revoked, and is logged in CloudTrail. Always prefer IAM users
+> over root for day-to-day work.
+
+> **Terraform and AdministratorAccess:** Ideally `terraform-deployer` would have a
+> least-privilege policy listing only Lambda, ECR, DynamoDB, and IAM. In practice,
+> getting that right requires iterating through `AccessDenied` errors. For now,
+> `Administrators` is fine — once the infra is stable you can scope it down.
 
 ## 5. Create an Admin IAM User (for console access)
 
-The `terraform-deployer` user has no console login — it's CLI-only by design.
-Create a separate user for yourself to browse the AWS Console safely.
+This user is for you — to browse CloudWatch logs, inspect DynamoDB, check Lambda
+invocations, etc. It has console access but no long-lived CLI keys.
 
 1. IAM → **Users** → **Create user**
 2. Username: `darshil` (or any name you prefer)
 3. Enable **AWS Management Console access** → choose **I want to create an IAM user** → set a password
-4. Permissions: attach **AdministratorAccess**
+4. Add to group: `Administrators`
 5. After creation → **Security credentials** tab → **Assign MFA device** → Authenticator app
-
-> **Why separate users?** If `terraform-deployer` credentials ever leak, the attacker
-> can't log into the console (no password). Your console user has no long-lived access
-> keys. Neither account is the root. This is the AWS-recommended pattern.
 
 From now on, use this user — not root — whenever you log into the console.
 
-## 6. Configure AWS CLI
+## 6. Create an IAM User for Terraform (programmatic access)
+
+This user is CLI-only — no console login. Terraform uses its access keys to create
+and manage AWS resources.
+
+1. IAM → **Users** → **Create user**
+2. Username: `terraform-deployer`
+3. Do NOT enable console access
+4. Add to group: `Administrators`
+5. After creation → **Security credentials** tab → **Create access key**
+6. Choose **Command Line Interface (CLI)** → download the CSV
+
+> **Why separate users?** If `terraform-deployer` credentials ever leak, the attacker
+> can't log into the console (no password set). Your console user has no long-lived
+> access keys. Neither account is root. This is the AWS-recommended pattern.
+
+## 7. Configure AWS CLI
 
 ```bash
 # Install AWS CLI (Linux)
