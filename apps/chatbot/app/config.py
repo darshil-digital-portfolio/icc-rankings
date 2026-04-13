@@ -14,9 +14,14 @@ class Settings(BaseSettings):
         "postgresql://icc_readonly:icc_readonly_secret@localhost:5432/icc_ranking"
     )
 
-    # MongoDB
+    # MongoDB — local dev only; not used when app_env=production
     mongo_url: str = "mongodb://localhost:47017"
     mongo_db: str = "icc_ranking"
+
+    # DynamoDB — production only; populated from Lambda env vars via Terraform
+    dynamo_conversations_table: str = "icc-rankings-conversations"
+    dynamo_users_table: str = "icc-rankings-users"
+    aws_region: str = "ap-south-1"
 
     # Server
     host: str = "0.0.0.0"

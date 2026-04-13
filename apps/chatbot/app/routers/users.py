@@ -8,8 +8,23 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from app.db.mongo import get_user_sessions
-from app.db.users import get_or_create_user, get_user, update_preferences
+from app.config import settings
+
+
+def _db():
+    if settings.app_env == "production":
+        import app.db.dynamo as mod
+    else:
+        import app.db.mongo as mod
+    return mod
+
+
+def _users_db():
+    if settings.app_env == "production":
+        import app.db.users_dynamo as mod
+    else:
+        import app.db.users as mod
+    return mod
 from app.models import SessionSummary, UpdatePreferencesRequest, UserPreferences, UserProfile
 from app.routers.auth_middleware import verify_service_token
 
@@ -46,7 +61,7 @@ async def get_or_create_me(
     """Upsert user on sign-in and return their full profile."""
     if not x_user_sub:
         raise HTTPException(status_code=400, detail="X-User-Sub header is required")
-    doc = await get_or_create_user(
+    doc = await _users_db().get_or_create_user(
         google_sub=x_user_sub,
         email=x_user_email or "",
         name=x_user_name or "",
@@ -67,7 +82,7 @@ async def patch_preferences(
     """Partially update the authenticated user's preferences."""
     if not x_user_sub:
         raise HTTPException(status_code=400, detail="X-User-Sub header is required")
-    doc = await update_preferences(
+    doc = await _users_db().update_preferences(
         google_sub=x_user_sub,
         theme=body.theme,
         event_filters=body.event_filters,
@@ -87,7 +102,7 @@ async def admin_check(
     """Return whether the given user has admin privileges."""
     if not x_user_sub:
         raise HTTPException(status_code=400, detail="X-User-Sub header is required")
-    doc = await get_user(x_user_sub)
+    doc = await _users_db().get_user(x_user_sub)
     return {"is_admin": doc.get("is_admin", False) if doc else False}
 
 
@@ -103,7 +118,7 @@ async def list_user_sessions(
     """Return the authenticated user's conversation sessions, newest first."""
     if not x_user_sub:
         raise HTTPException(status_code=400, detail="X-User-Sub header is required")
-    raw = await get_user_sessions(x_user_sub, limit=limit)
+    raw = await _db().get_user_sessions(x_user_sub, limit=limit)
     summaries = []
     for doc in raw:
         messages = doc.get("messages", [])

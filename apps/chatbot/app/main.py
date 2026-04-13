@@ -11,13 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.config import settings
-from app.db.mongo import (
-    append_message,
-    cleanup_old_conversations,
-    close_mongo,
-    get_recent_messages,
-    init_mongo,
-)
 from app.db.postgres import close_pool, init_pool
 from app.graph.graph import get_graph
 from app.models import ChatRequest, ChatResponse, HistoryMessage, HistoryResponse
@@ -30,32 +23,49 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# ── DB backend helpers ───────────────────────────────────────────────────────
+
+def _db():
+    """Return the correct conversations DB module based on APP_ENV."""
+    if settings.app_env == "production":
+        import app.db.dynamo as mod
+    else:
+        import app.db.mongo as mod
+    return mod
+
+
+def _users_db():
+    """Return the correct users DB module based on APP_ENV."""
+    if settings.app_env == "production":
+        import app.db.users_dynamo as mod
+    else:
+        import app.db.users as mod
+    return mod
+
+
 # ── Lifespan ────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
-    logger.info("Starting Twelfth Man chatbot service...")
+    logger.info("Starting Twelfth Man chatbot service [env=%s]...", settings.app_env)
     await init_pool()
-    await init_mongo()
 
-    # Clean up old conversations on startup.
-    deleted = await cleanup_old_conversations()
-    if deleted:
-        logger.info("Cleaned up %d expired conversations", deleted)
-
-    logger.info(
-        "Twelfth Man ready on %s:%d [%s] (router=%s, sql=%s)",
-        settings.host,
-        settings.port,
-        settings.app_env,
-        settings.router_model,
-        settings.sql_model,
-    )
-    yield
+    if settings.app_env == "production":
+        from app.db.dynamo import init_dynamo, close_dynamo
+        await init_dynamo()
+        yield
+        await close_dynamo()
+    else:
+        from app.db.mongo import init_mongo, close_mongo, cleanup_old_conversations
+        await init_mongo()
+        deleted = await cleanup_old_conversations()
+        if deleted:
+            logger.info("Cleaned up %d expired conversations", deleted)
+        yield
+        await close_mongo()
 
     await close_pool()
-    await close_mongo()
     logger.info("Twelfth Man shut down")
 
 
@@ -113,10 +123,10 @@ async def chat(request: ChatRequest):
     user_message = request.message.strip()
 
     # Save user message to history.
-    await append_message(session_id, "user", user_message, user_id=request.user_id)
+    await _db().append_message(session_id, "user", user_message, user_id=request.user_id)
 
     # Load recent conversation history for context.
-    recent = await get_recent_messages(
+    recent = await _db().get_recent_messages(
         session_id, limit=settings.context_window_messages
     )
 
@@ -153,7 +163,7 @@ async def chat(request: ChatRequest):
     chart_spec: dict[str, Any] | None = _sanitise_chart(raw_chart)
 
     # Save assistant response to history.
-    await append_message(
+    await _db().append_message(
         session_id,
         "assistant",
         response_text,
@@ -202,7 +212,7 @@ def _normalize_chart(raw: Any) -> dict | None:
 @app.get("/history/{session_id}", response_model=HistoryResponse)
 async def get_history(session_id: str):
     """Retrieve conversation history for a session."""
-    messages = await get_recent_messages(session_id)
+    messages = await _db().get_recent_messages(session_id)
 
     return HistoryResponse(
         session_id=session_id,
