@@ -1,0 +1,17 @@
+# infrastructure/terraform/terraform.tfvars.example
+# Copy to terraform.tfvars and fill in. NEVER commit terraform.tfvars.
+
+aws_region   = "us-east-1"
+project_name = "icc-rankings"
+domain_name  = "darshil-ai.com"
+
+# From Neon Console → your project → Connection Details
+# Use the POOLED connection string for Lambda
+neon_database_url          = "postgresql://icc_owner:CHANGE_ME@ep-xxx-pooler.us-east-1.aws.neon.tech/icc_ranking?sslmode=require"
+neon_readonly_database_url = "postgresql://icc_readonly:icc_readonly_secret@ep-xxx-pooler.us-east-1.aws.neon.tech/icc_ranking?sslmode=require"
+
+# From console.anthropic.com → API Keys
+anthropic_api_key = "sk-ant-CHANGE_ME"
+
+# Generate: openssl rand -hex 32
+service_api_token = "CHANGE_ME"

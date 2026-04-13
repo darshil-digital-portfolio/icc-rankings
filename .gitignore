@@ -47,6 +47,13 @@ htmlcov/
 # ─── MongoDB data (local dev) ─────────────────────────────────────────────────
 docker/data/
 
+# ─── Terraform ───────────────────────────────────────────────────────────────
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/terraform.tfstate
+infrastructure/terraform/terraform.tfstate.backup
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl
+
 # ─── Claude Code ──────────────────────────────────────────────────────────────
 .claude
 mongodb-compass*.deb

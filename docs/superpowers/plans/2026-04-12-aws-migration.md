@@ -30,8 +30,9 @@
 | DynamoDB | 25GB + 25WCU/RCU — **always free** | $0 |
 | Neon (PostgreSQL) | 0.5GB storage — **genuinely free** | $0 |
 | IAM, CloudWatch logs | Always free | $0 |
-| Route 53 (optional) | No free tier | $0.50 |
-| **Total** | | **$0 – $0.50/mo** |
+| **Total** | | **$0/mo** |
+
+> **DNS:** Route 53 skipped — DNS is managed at the domain registrar. Vercel provides a CNAME value when you add the custom domain; add it directly at your registrar. Lambda Function URLs are called via Vercel env vars, no DNS record needed.
 
 > **Reality check for hobby usage:** 300 chatbot req/month × 10s × 1GB = 3,000 GB-seconds vs 400,000 free → $0. 3,000 API requests × 0.1s × 0.25GB = 75 GB-seconds → $0. This is not a "first N are free" trap — these limits genuinely cover hobby-scale usage with room to spare.
 
@@ -61,7 +62,7 @@ infrastructure/
     iam.tf                         # IAM roles for Lambda functions
     lambda.tf                      # Lambda functions + Function URLs
     dynamodb.tf                    # conversations + users tables
-    route53.tf                     # Optional: hosted zone + DNS records
+    # route53.tf                   # Skipped — DNS managed at domain registrar
     terraform.tfvars.example       # Example var file (no secrets)
   scripts/
     migrate-postgres-to-neon.sh    # pg_dump local → pg_restore to Neon
@@ -483,7 +484,7 @@ variable "project_name" {
 }
 
 variable "domain_name" {
-  description = "Root domain (e.g. darshil-ai.com) — used for Route 53 and CORS"
+  description = "Root domain (e.g. darshil-ai.com) — used for CORS allowed origins"
   type        = string
   default     = "darshil-ai.com"
 }
@@ -952,14 +953,11 @@ git commit -m "feat(terraform): add DynamoDB conversations and users tables"
 
 ---
 
-### Task 9: Route 53 (Optional — $0.50/month)
+### ~~Task 9: Route 53~~ — SKIPPED
 
-**Files:**
-- Create: `infrastructure/terraform/route53.tf`
+**Decision:** DNS is managed at the domain registrar instead. Route 53 costs $0.50/month with no free tier. Lambda Function URLs are configured directly in Vercel env vars; the web subdomain CNAME is set at the registrar using the value Vercel provides.
 
-This task is optional. If you want DNS managed in AWS (shows Route 53 knowledge):
-
-- [ ] **Step 1: Write route53.tf**
+- [x] **Step 1: Write route53.tf** — skipped
 
 ```hcl
 # infrastructure/terraform/route53.tf
@@ -1944,7 +1942,7 @@ git commit -m "chore(migration): add MongoDB to DynamoDB migration script"
 ## Diagram
 
 ```
-                        darshil-ai.com (domain registrar or Route 53)
+                        darshil-ai.com (domain registrar)
                                │
           ┌────────────────────┼─────────────────────────┐
           │                   │                          │
@@ -1999,8 +1997,9 @@ icc-rankings.darshil-ai.com  api.icc-rankings.*    chat.icc-rankings.*
 | DynamoDB | 25GB + 25WCU free | <10MB, <500 req/day | $0 |
 | Neon PostgreSQL | 0.5GB storage free | ~5–10MB data | $0 |
 | Vercel hosting | Hobby plan free | — | $0 |
-| Route 53 | No free tier | 1 hosted zone | $0.50 |
-| **Total** | | | **$0 – $0.50** |
+| **Total** | | | **$0** |
+
+> DNS managed at domain registrar (free). Route 53 skipped.
 
 *Compute breakdown: 300 chatbot req × 10s × 1GB = 3,000 GB-sec; 3,000 API req × 0.1s × 0.25GB = 75 GB-sec. Total: 3,075 of 400,000 free.
 
