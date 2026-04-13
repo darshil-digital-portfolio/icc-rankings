@@ -24,7 +24,8 @@ resource "aws_ecr_repository" "chatbot" {
   tags = { Name = "${var.project_name}-chatbot-repo" }
 }
 
-# Keep only last 3 images to stay well within the 50GB always-free limit
+# Keep only latest image per repo — codebase is git-tracked, old images have no value.
+# ECR free tier is 50GB/account (shared across all projects), so keep footprint minimal.
 resource "aws_ecr_lifecycle_policy" "api" {
   repository = aws_ecr_repository.api.name
   policy = jsonencode({
@@ -34,7 +35,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 3
+        countNumber = 1
       }
       action = { type = "expire" }
     }]
@@ -50,7 +51,7 @@ resource "aws_ecr_lifecycle_policy" "chatbot" {
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 3
+        countNumber = 1
       }
       action = { type = "expire" }
     }]
