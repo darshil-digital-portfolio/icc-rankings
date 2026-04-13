@@ -37,7 +37,24 @@ Console → top-right account menu → **Security credentials**
 5. After creation → **Security credentials** tab → **Create access key**
 6. Choose **Command Line Interface (CLI)** → download the CSV
 
-## 5. Configure AWS CLI
+## 5. Create an Admin IAM User (for console access)
+
+The `terraform-deployer` user has no console login — it's CLI-only by design.
+Create a separate user for yourself to browse the AWS Console safely.
+
+1. IAM → **Users** → **Create user**
+2. Username: `darshil` (or any name you prefer)
+3. Enable **AWS Management Console access** → choose **I want to create an IAM user** → set a password
+4. Permissions: attach **AdministratorAccess**
+5. After creation → **Security credentials** tab → **Assign MFA device** → Authenticator app
+
+> **Why separate users?** If `terraform-deployer` credentials ever leak, the attacker
+> can't log into the console (no password). Your console user has no long-lived access
+> keys. Neither account is the root. This is the AWS-recommended pattern.
+
+From now on, use this user — not root — whenever you log into the console.
+
+## 6. Configure AWS CLI
 
 ```bash
 # Install AWS CLI (Linux)
