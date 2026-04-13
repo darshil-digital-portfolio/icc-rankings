@@ -1,10 +1,19 @@
 # AWS Account Setup Guide
 
-## 1. Sign In to Your Existing AWS Account
+## 1. Create a New AWS Account
 
-Go to https://console.aws.amazon.com and sign in.
-You already have an account. The 12-month free tier has expired, but the services
-we use (Lambda, DynamoDB, ECR) have **always-free** tiers with no expiry.
+Go to https://console.aws.amazon.com and click **Create a new AWS account**.
+
+You will need:
+- An email address (use a fresh one, or a `+alias` like `you+aws@gmail.com`)
+- A credit/debit card (required by AWS for identity verification — you won't be charged for the services we use)
+- A phone number for verification
+
+Complete the sign-up flow. Choose the **Basic (free) support plan** when prompted.
+
+> **Note:** New accounts get the full 12-month free tier on top of the always-free services
+> (Lambda, DynamoDB, ECR). The 12-month tier covers things like EC2 and S3 — we don't
+> use those, but it's a nice bonus.
 
 ## 2. Enable MFA on Root Account (if not done)
 
