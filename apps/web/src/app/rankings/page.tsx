@@ -25,7 +25,12 @@ export default async function RankingsPage({ searchParams }: PageProps) {
     .filter((t) => t.events_participated > 0)
     .map((t) => t.slug);
 
-  const teamDetails = await Promise.all(slugs.map((slug) => getTeam(slug)));
+  // Fetch in batches of 5 to avoid Lambda concurrency limit on new accounts
+  const teamDetails: Awaited<ReturnType<typeof getTeam>>[] = [];
+  for (let i = 0; i < slugs.length; i += 5) {
+    const batch = await Promise.all(slugs.slice(i, i + 5).map((slug) => getTeam(slug)));
+    teamDetails.push(...batch);
+  };
 
   return (
     <div className="container-page py-10">
