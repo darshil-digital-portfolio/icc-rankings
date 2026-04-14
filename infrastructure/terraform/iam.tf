@@ -23,6 +23,30 @@ resource "aws_iam_role_policy_attachment" "lambda_api_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy" "lambda_api_ecr" {
+  name = "${var.project_name}-api-ecr"
+  role = aws_iam_role.lambda_api.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "ECRImagePull"
+      Effect = "Allow"
+      Action = [
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+      ]
+      Resource = aws_ecr_repository.api.arn
+    }, {
+      Sid      = "ECRAuth"
+      Effect   = "Allow"
+      Action   = "ecr:GetAuthorizationToken"
+      Resource = "*"
+    }]
+  })
+}
+
 # ── Chatbot Lambda Role ────────────────────────────────────────────────────────
 # The chatbot needs: logs + DynamoDB (conversations + users tables).
 
@@ -34,6 +58,30 @@ resource "aws_iam_role" "lambda_chatbot" {
 resource "aws_iam_role_policy_attachment" "lambda_chatbot_logs" {
   role       = aws_iam_role.lambda_chatbot.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "lambda_chatbot_ecr" {
+  name = "${var.project_name}-chatbot-ecr"
+  role = aws_iam_role.lambda_chatbot.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "ECRImagePull"
+      Effect = "Allow"
+      Action = [
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+      ]
+      Resource = aws_ecr_repository.chatbot.arn
+    }, {
+      Sid      = "ECRAuth"
+      Effect   = "Allow"
+      Action   = "ecr:GetAuthorizationToken"
+      Resource = "*"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "lambda_chatbot_dynamodb" {

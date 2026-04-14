@@ -1,5 +1,8 @@
+# ── Lambda Web Adapter ──────────────────────────────────────────────────────────
+FROM --platform=linux/amd64 public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 AS lambda-adapter
+
 # ── Builder stage ──────────────────────────────────────────────────────────────
-FROM rust:1.80-slim AS builder
+FROM --platform=linux/amd64 rust:1.88-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
@@ -19,11 +22,9 @@ COPY migrations ./migrations
 RUN touch src/main.rs && cargo build --release
 
 # ── Runtime stage ──────────────────────────────────────────────────────────────
-FROM debian:bookworm-slim AS runtime
+FROM --platform=linux/amd64 debian:bookworm-slim AS runtime
 
-# Lambda Web Adapter: translates Lambda invocation events → HTTP → your Axum app
-COPY --from=public.ecr.aws/awsguru/aws-lambda-web-adapter:0.8.4 \
-     /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \

@@ -31,6 +31,14 @@ resource "aws_lambda_function" "api" {
   tags = { Name = "${var.project_name}-api" }
 }
 
+resource "aws_lambda_permission" "api_public_url" {
+  statement_id           = "FunctionURLAllowPublicAccess"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.api.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
 resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE" # Public API — anyone can call it
@@ -38,7 +46,7 @@ resource "aws_lambda_function_url" "api" {
   cors {
     allow_credentials = false
     allow_origins     = ["*"]
-    allow_methods     = ["GET", "POST", "OPTIONS"]
+    allow_methods     = ["GET", "POST"]
     allow_headers     = ["Content-Type", "Authorization"]
     max_age           = 86400
   }
@@ -60,7 +68,6 @@ resource "aws_lambda_function" "chatbot" {
       DATABASE_URL               = var.neon_readonly_database_url
       DYNAMO_CONVERSATIONS_TABLE = aws_dynamodb_table.conversations.name
       DYNAMO_USERS_TABLE         = aws_dynamodb_table.users.name
-      AWS_DEFAULT_REGION         = var.aws_region
       ANTHROPIC_API_KEY          = var.anthropic_api_key
       SERVICE_API_TOKEN          = var.service_api_token
       APP_ENV                    = "production"
@@ -76,6 +83,14 @@ resource "aws_lambda_function" "chatbot" {
   tags = { Name = "${var.project_name}-chatbot" }
 }
 
+resource "aws_lambda_permission" "chatbot_public_url" {
+  statement_id           = "FunctionURLAllowPublicAccess"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.chatbot.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
 resource "aws_lambda_function_url" "chatbot" {
   function_name      = aws_lambda_function.chatbot.function_name
   authorization_type = "NONE"
@@ -84,9 +99,8 @@ resource "aws_lambda_function_url" "chatbot" {
     allow_credentials = true
     allow_origins = [
       "https://icc-rankings.${var.domain_name}",
-      "https://*.vercel.app", # Vercel preview deploy URLs
     ]
-    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_methods = ["GET", "POST"]
     allow_headers = ["Content-Type", "Authorization", "X-Service-Token"]
     max_age       = 86400
   }
