@@ -3,6 +3,7 @@
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any
 
 import uvicorn
@@ -122,8 +123,33 @@ async def chat(request: ChatRequest):
     session_id = request.session_id
     user_message = request.message.strip()
 
-    # Save user message to history.
+    # Always save the user message first so it appears in history.
     await _db().append_message(session_id, "user", user_message, user_id=request.user_id)
+
+    # Enforce per-user monthly question limit for authenticated requests.
+    if request.user_id:
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        allowed = await _users_db().check_and_increment_usage(
+            request.user_id, month, settings.free_question_limit
+        )
+        if not allowed:
+            apology = (
+                f"I'm really sorry — you've used up your {settings.free_question_limit} "
+                "free questions for this month! This is a demo environment and the API "
+                "costs are very real, so I have to keep things within budget. "
+                "Your access will reset at the start of next month. "
+                "Thanks so much for your understanding! 🏏"
+            )
+            await _db().append_message(
+                session_id, "assistant", apology, user_id=request.user_id
+            )
+            return ChatResponse(
+                text=apology,
+                chart=None,
+                followup_suggestions=[],
+                session_id=session_id,
+                quota_exceeded=True,
+            )
 
     # Load recent conversation history for context.
     recent = await _db().get_recent_messages(
@@ -159,10 +185,8 @@ async def chat(request: ChatRequest):
     raw_chart = result.get("chart_spec")
     followups = result.get("followup_suggestions", [])
 
-    # Validate chart spec — discard if it doesn't match ChartSpec schema.
     chart_spec: dict[str, Any] | None = _sanitise_chart(raw_chart)
 
-    # Save assistant response to history.
     await _db().append_message(
         session_id,
         "assistant",
