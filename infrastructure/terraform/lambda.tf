@@ -39,6 +39,13 @@ resource "aws_lambda_permission" "api_public_url" {
   function_url_auth_type = "NONE"
 }
 
+resource "aws_lambda_permission" "api_invoke_via_url" {
+  statement_id  = "FunctionURLAllowInvokeAction"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "*"
+}
+
 resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE" # Public API — anyone can call it
@@ -47,7 +54,7 @@ resource "aws_lambda_function_url" "api" {
     allow_credentials = false
     allow_origins     = ["*"]
     allow_methods     = ["GET", "POST"]
-    allow_headers     = ["Content-Type", "Authorization"]
+    allow_headers     = ["authorization", "content-type"]
     max_age           = 86400
   }
 }
@@ -71,6 +78,7 @@ resource "aws_lambda_function" "chatbot" {
       ANTHROPIC_API_KEY          = var.anthropic_api_key
       SERVICE_API_TOKEN          = var.service_api_token
       APP_ENV                    = "production"
+      FREE_QUESTION_LIMIT        = "30"
       HOST                       = "0.0.0.0"
       PORT                       = "8100" # Lambda Web Adapter reads this
     }
@@ -91,6 +99,13 @@ resource "aws_lambda_permission" "chatbot_public_url" {
   function_url_auth_type = "NONE"
 }
 
+resource "aws_lambda_permission" "chatbot_invoke_via_url" {
+  statement_id  = "FunctionURLAllowInvokeAction"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.chatbot.function_name
+  principal     = "*"
+}
+
 resource "aws_lambda_function_url" "chatbot" {
   function_name      = aws_lambda_function.chatbot.function_name
   authorization_type = "NONE"
@@ -101,7 +116,7 @@ resource "aws_lambda_function_url" "chatbot" {
       "https://icc-rankings.${var.domain_name}",
     ]
     allow_methods = ["GET", "POST"]
-    allow_headers = ["Content-Type", "Authorization", "X-Service-Token"]
+    allow_headers = ["authorization", "content-type", "x-service-token"]
     max_age       = 86400
   }
 }
