@@ -77,3 +77,12 @@ async def update_preferences(
         return_document=ReturnDocument.AFTER,
     )
     return doc  # type: ignore[return-value]
+
+
+async def check_and_increment_usage(
+    google_sub: str,
+    month: str,
+    limit: int,
+) -> bool:
+    """No-op stub — quota is only enforced in production (DynamoDB)."""
+    return True
