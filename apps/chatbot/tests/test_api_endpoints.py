@@ -21,9 +21,9 @@ def mock_dependencies():
     with (
         patch("app.main.init_pool", new_callable=AsyncMock),
         patch("app.main.close_pool", new_callable=AsyncMock),
-        patch("app.main.init_mongo", new_callable=AsyncMock),
-        patch("app.main.close_mongo", new_callable=AsyncMock),
-        patch("app.main.cleanup_old_conversations", new_callable=AsyncMock, return_value=0),
+        patch("app.db.mongo.init_mongo", new_callable=AsyncMock),
+        patch("app.db.mongo.close_mongo", new_callable=AsyncMock),
+        patch("app.db.mongo.cleanup_old_conversations", new_callable=AsyncMock, return_value=0),
     ):
         yield
 
@@ -88,8 +88,8 @@ class TestChatEndpoint:
             "followup_suggestions": ["Top teams?", "World cup?"],
         }
         with (
-            patch("app.main.append_message", new_callable=AsyncMock),
-            patch("app.main.get_recent_messages", new_callable=AsyncMock, return_value=[
+            patch("app.db.mongo.append_message", new_callable=AsyncMock),
+            patch("app.db.mongo.get_recent_messages", new_callable=AsyncMock, return_value=[
                 {"role": "user", "text": "Hello!"},
             ]),
             patch("app.main.get_graph") as mock_get_graph,
@@ -125,8 +125,8 @@ class TestChatEndpoint:
             "followup_suggestions": [],
         }
         with (
-            patch("app.main.append_message", new_callable=AsyncMock),
-            patch("app.main.get_recent_messages", new_callable=AsyncMock, return_value=[
+            patch("app.db.mongo.append_message", new_callable=AsyncMock),
+            patch("app.db.mongo.get_recent_messages", new_callable=AsyncMock, return_value=[
                 {"role": "user", "text": "Top teams?"},
             ]),
             patch("app.main.get_graph") as mock_get_graph,
@@ -177,7 +177,7 @@ class TestHistoryEndpoint:
 
     @pytest.mark.asyncio
     async def test_get_history_empty(self, client):
-        with patch("app.main.get_recent_messages", new_callable=AsyncMock, return_value=[]):
+        with patch("app.db.mongo.get_recent_messages", new_callable=AsyncMock, return_value=[]):
             resp = await client.get("/history/test-session-123")
             assert resp.status_code == 200
             data = resp.json()
@@ -200,10 +200,77 @@ class TestHistoryEndpoint:
                 "timestamp": datetime(2025, 1, 1, 0, 0, 1, tzinfo=timezone.utc),
             },
         ]
-        with patch("app.main.get_recent_messages", new_callable=AsyncMock, return_value=mock_messages):
+        with patch("app.db.mongo.get_recent_messages", new_callable=AsyncMock, return_value=mock_messages):
             resp = await client.get("/history/test-session-123")
             assert resp.status_code == 200
             data = resp.json()
             assert len(data["messages"]) == 2
             assert data["messages"][0]["role"] == "user"
             assert data["messages"][1]["role"] == "assistant"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Quota enforcement
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class TestChatQuotaEnforcement:
+
+    @pytest.mark.asyncio
+    async def test_quota_exceeded_returns_200_with_flag(self, client):
+        """When quota is exceeded, /chat returns 200 with quota_exceeded=True."""
+        with (
+            patch("app.db.users.check_and_increment_usage", new_callable=AsyncMock, return_value=False),
+            patch("app.db.mongo.append_message", new_callable=AsyncMock),
+        ):
+            resp = await client.post("/chat", json={
+                "message": "Who won the 2023 World Cup?",
+                "session_id": "test-session-quota",
+                "user_id": "google-sub-xyz",
+            })
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["quota_exceeded"] is True
+            assert "30" in data["text"] or "limit" in data["text"].lower() or "sorry" in data["text"].lower()
+            assert data["followup_suggestions"] == []
+
+    @pytest.mark.asyncio
+    async def test_quota_exceeded_saves_both_messages_to_history(self, client):
+        """When quota is exceeded, user message AND apology are both saved."""
+        mock_append = AsyncMock()
+        with (
+            patch("app.db.users.check_and_increment_usage", new_callable=AsyncMock, return_value=False),
+            patch("app.db.mongo.append_message", mock_append),
+        ):
+            await client.post("/chat", json={
+                "message": "Any question",
+                "session_id": "test-session-quota",
+                "user_id": "google-sub-xyz",
+            })
+            assert mock_append.call_count == 2
+            assert mock_append.call_args_list[0][0][1] == "user"
+            assert mock_append.call_args_list[1][0][1] == "assistant"
+
+    @pytest.mark.asyncio
+    async def test_no_user_id_skips_quota_check(self, client):
+        """Requests without user_id bypass quota and proceed normally."""
+        mock_graph_result = {
+            "response_text": "Hello!",
+            "chart_spec": None,
+            "followup_suggestions": [],
+        }
+        with (
+            patch("app.db.mongo.append_message", new_callable=AsyncMock),
+            patch("app.db.mongo.get_recent_messages", new_callable=AsyncMock, return_value=[]),
+            patch("app.main.get_graph") as mock_get_graph,
+        ):
+            mock_graph = AsyncMock()
+            mock_graph.ainvoke = AsyncMock(return_value=mock_graph_result)
+            mock_get_graph.return_value = mock_graph
+
+            resp = await client.post("/chat", json={
+                "message": "Hello!",
+                "session_id": "anon-session",
+            })
+            assert resp.status_code == 200
+            assert resp.json()["quota_exceeded"] is False

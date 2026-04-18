@@ -15,7 +15,7 @@
 
 **AWS skills showcased:** Lambda container images, ECR, DynamoDB, IAM least-privilege roles, Lambda Function URLs, CloudWatch Logs — a modern serverless stack.
 
-**Tech Stack:** Terraform ≥1.5, AWS provider ~5.0, Lambda Web Adapter 0.8.4, aioboto3, Neon (PostgreSQL), Vercel
+**Tech Stack:** Terraform ≥1.5, AWS provider ~5.0, Lambda Web Adapter 1.0.0 (aws-lambda-adapter), aioboto3, Neon (PostgreSQL), Vercel
 
 ---
 
@@ -1015,7 +1015,7 @@ Lambda Web Adapter is a thin layer from AWS that translates Lambda events into H
 # docker/Dockerfile.api
 
 # ── Builder stage (unchanged) ──────────────────────────────────────────────────
-FROM rust:1.80-slim AS builder
+FROM rust:1.88-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
@@ -1036,7 +1036,7 @@ RUN touch src/main.rs && cargo build --release
 FROM debian:bookworm-slim AS runtime
 
 # Lambda Web Adapter: translates Lambda invocation events → HTTP → your Axum app
-COPY --from=public.ecr.aws/awsguru/aws-lambda-web-adapter:0.8.4 \
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.0 \
      /lambda-adapter /opt/extensions/lambda-adapter
 
 RUN apt-get update && apt-get install -y \
@@ -1084,7 +1084,7 @@ git commit -m "feat(docker): add Lambda Web Adapter to Rust API image"
 FROM python:3.12-slim
 
 # Lambda Web Adapter: translates Lambda invocation events → HTTP → your FastAPI app
-COPY --from=public.ecr.aws/awsguru/aws-lambda-web-adapter:0.8.4 \
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.0 \
      /lambda-adapter /opt/extensions/lambda-adapter
 
 WORKDIR /app
@@ -2059,8 +2059,11 @@ terraform output chatbot_ecr_url
 ```bash
 cd /path/to/icc-rankings  # project root
 
-# Authenticate Docker to ECR (run the command from terraform output)
-$(cd infrastructure/terraform && terraform output -raw ecr_login_command)
+# Authenticate Docker to public ECR (required for Lambda Web Adapter base image)
+aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+
+# Authenticate Docker to your private ECR (use eval — $() does not interpret pipes)
+eval "$(cd infrastructure/terraform && terraform output -raw ecr_login_command)"
 
 # Get ECR URLs
 API_ECR=$(cd infrastructure/terraform && terraform output -raw api_ecr_url)

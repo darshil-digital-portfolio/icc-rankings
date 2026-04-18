@@ -60,6 +60,7 @@ export function ChatView({ userName, googleSub, isNewUser }: ChatViewProps) {
   const [followups, setFollowups] = useState<string[]>(DEFAULT_FOLLOWUPS);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -116,6 +117,9 @@ export function ChatView({ userName, googleSub, isNewUser }: ChatViewProps) {
           chart: res.chart,
         };
         setMessages((prev) => [...prev, assistantMsg]);
+        if (res.quota_exceeded) {
+          setQuotaExceeded(true);
+        }
         if (res.followup_suggestions?.length) {
           setFollowups(res.followup_suggestions);
         }
@@ -249,15 +253,16 @@ export function ChatView({ userName, googleSub, isNewUser }: ChatViewProps) {
                 "focus:border-pitch-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pitch-400/20",
                 "dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500",
                 "dark:focus:border-pitch-500 dark:focus:bg-slate-700 dark:focus:ring-pitch-500/20",
+                (isLoading || quotaExceeded) && "cursor-not-allowed opacity-50",
               )}
-              disabled={isLoading}
+              disabled={isLoading || quotaExceeded}
             />
             <button
               onClick={() => handleSend()}
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || quotaExceeded}
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
-                input.trim() && !isLoading
+                input.trim() && !isLoading && !quotaExceeded
                   ? "bg-pitch-600 text-white hover:bg-pitch-500"
                   : "bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500",
               )}

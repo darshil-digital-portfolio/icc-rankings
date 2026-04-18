@@ -23,6 +23,7 @@ export interface ChatResponse {
   chart: ChartSpec | null;
   followup_suggestions: string[];
   session_id: string;
+  quota_exceeded: boolean;
 }
 
 export interface HistoryMessage {

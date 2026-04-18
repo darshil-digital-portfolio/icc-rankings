@@ -31,7 +31,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep last 3 images"
+      description  = "Keep only the latest image"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
@@ -47,7 +47,7 @@ resource "aws_ecr_lifecycle_policy" "chatbot" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep last 3 images"
+      description  = "Keep only the latest image"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"

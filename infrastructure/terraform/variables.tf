@@ -22,14 +22,14 @@ variable "neon_database_url" {
   description = "Neon PostgreSQL pooled connection URL (for Rust API Lambda)"
   type        = string
   sensitive   = true
-  # Format: postgresql://icc_owner:<pass>@<host>-pooler.neon.tech/icc_ranking?sslmode=require
+  # Format: postgresql://neondb_owner:<pass>@<host>-pooler.neon.tech/neondb?sslmode=require
 }
 
 variable "neon_readonly_database_url" {
   description = "Neon PostgreSQL pooled connection URL for read-only user (for chatbot Lambda)"
   type        = string
   sensitive   = true
-  # Format: postgresql://icc_readonly:icc_readonly_secret@<host>-pooler.neon.tech/icc_ranking?sslmode=require
+  # Format: postgresql://icc_readonly:icc_readonly_secret@<host>-pooler.neon.tech/neondb?sslmode=require
 }
 
 variable "anthropic_api_key" {

@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     context_window_messages: int = 10
     history_retention_days: int = 90
 
+    # Per-user quota
+    free_question_limit: int = 30
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @model_validator(mode="after")

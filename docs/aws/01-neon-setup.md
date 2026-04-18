@@ -37,12 +37,12 @@ After creation, Neon shows your connection details. You need two:
 
 **Direct connection** (for migrations and the Rust API):
 ```
-postgresql://icc_owner:<password>@<host>.neon.tech/icc_ranking?sslmode=require
+postgresql://neondb_owner:<password>@<host>.neon.tech/neondb?sslmode=require
 ```
 
 **Pooled connection** (for Lambda — avoids connection exhaustion):
 ```
-postgresql://icc_owner:<password>@<host>-pooler.neon.tech/icc_ranking?sslmode=require
+postgresql://neondb_owner:<password>@<host>-pooler.neon.tech/neondb?sslmode=require
 ```
 
 > Lambda creates many short-lived connections. Always use the pooled URL for
@@ -50,26 +50,41 @@ postgresql://icc_owner:<password>@<host>-pooler.neon.tech/icc_ranking?sslmode=re
 
 Save both strings — you'll add them to `terraform.tfvars`.
 
-### 4. Create the Database and Read-Only User
+### 4. Grant Schema Permissions
 
-In the Neon Console → **SQL Editor**, run:
+On a new Neon project the `neondb_owner` role may not have `CREATE` on the
+public schema (PostgreSQL 15+ changed the default). Run this once in
+**Neon Console → SQL Editor** before starting the API:
 
 ```sql
--- Neon's default database is called "neondb" — use it as-is.
--- Create read-only role for the chatbot (mirrors docker/init-readonly-user.sql)
+GRANT ALL ON SCHEMA public TO neondb_owner;
+```
+
+Without this, the Rust API fails at startup with:
+`permission denied for schema public` when `sqlx` tries to create its
+`_sqlx_migrations` tracking table.
+
+### 5. Read-Only User
+
+The `icc_readonly` role is created automatically by `migrate-postgres-to-neon.sh` (Step 3 of that script). You do not need to create it manually.
+
+If you ever need to recreate it, run in the Neon Console → **SQL Editor**:
+
+```sql
 DO $$
-
-CREATE ROLE icc_readonly LOGIN PASSWORD 'icc_readonly_secret';
-
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'icc_readonly') THEN
+    CREATE ROLE icc_readonly LOGIN PASSWORD 'icc_readonly_secret';
+  END IF;
+  EXECUTE 'GRANT CONNECT ON DATABASE ' || current_database() || ' TO icc_readonly';
+END
 $$;
-
-GRANT CONNECT ON DATABASE neondb TO icc_readonly;
 GRANT USAGE ON SCHEMA public TO icc_readonly;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO icc_readonly;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO icc_readonly;
 ```
 
-### 5. Neon Branches (Optional but Recommended)
+### 6. Neon Branches (Optional but Recommended)
 
 Neon lets you create database branches — like git branches for your data.
 - `main` branch → production
@@ -78,15 +93,15 @@ Neon lets you create database branches — like git branches for your data.
 Console → **Branches** → **New Branch** → name: `dev`
 Get the `dev` branch connection string for your local `.env` files.
 
-### 6. Connection String for the Read-Only User
+### 7. Connection String for the Read-Only User
 
-Build the read-only pooled URL manually:
+Build the read-only pooled URL manually (user `icc_readonly` was created by the migration script):
 ```
 postgresql://icc_readonly:icc_readonly_secret@<host>-pooler.neon.tech/neondb?sslmode=require
 ```
 This goes into `neon_readonly_database_url` in `terraform.tfvars` (used by the chatbot).
 
-### 7. Why sslmode=require?
+### 8. Why sslmode=require?
 
 Neon requires SSL on all connections. The `?sslmode=require` parameter is already
 supported by both `sqlx` (Rust) and `psycopg` (Python). No code changes needed —

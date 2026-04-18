@@ -7,11 +7,11 @@ domain_name  = "darshil-ai.com"
 
 # From Neon Console → your project → Connection Details
 # Use the POOLED connection string for Lambda
-neon_database_url          = "postgresql://icc_owner:CHANGE_ME@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/icc_ranking?sslmode=require"
-neon_readonly_database_url = "postgresql://icc_readonly:icc_readonly_secret@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/icc_ranking?sslmode=require"
+neon_database_url          = "postgresql://neondb_owner:CHANGE_ME@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+neon_readonly_database_url = "postgresql://icc_readonly:icc_readonly_secret@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
 # From console.anthropic.com → API Keys
-anthropic_api_key = "sk-ant-CHANGE_ME"
+anthropic_api_key = "k-ant-api03-CDArUbuo25DBJu3KCKwpAx9w6dih3kmcl6xwm5WVOcqUPKUma-6tmAvjbbY824tTpyg0Ik3rbEuPF6Z8day_vQ-DhreAQAA"
 
 # Generate: openssl rand -hex 32
 service_api_token = "CHANGE_ME"

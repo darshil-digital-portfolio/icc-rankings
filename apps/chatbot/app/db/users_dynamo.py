@@ -100,3 +100,47 @@ async def update_preferences(
             kwargs["ExpressionAttributeNames"] = expr_names
         resp = await table.update_item(**kwargs)
         return resp.get("Attributes")
+
+
+async def check_and_increment_usage(google_sub: str, month: str, limit: int) -> bool:
+    """Atomically check and increment the user's monthly question count.
+
+    Returns True if the question is allowed (count was incremented or reset),
+    False if the monthly limit has already been reached.
+    """
+    async with _get_session().resource("dynamodb", region_name=settings.aws_region) as ddb:
+        table = await ddb.Table(settings.dynamo_users_table)
+
+        for _attempt in range(2):
+            try:
+                await table.update_item(
+                    Key={"google_sub": google_sub},
+                    UpdateExpression="ADD question_count :one",
+                    ConditionExpression=(
+                        "question_month = :month"
+                        " AND (attribute_not_exists(question_count) OR question_count < :limit)"
+                    ),
+                    ExpressionAttributeValues={":one": 1, ":month": month, ":limit": limit},
+                )
+                return True
+            except ClientError as e:
+                if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                    raise
+
+            try:
+                await table.update_item(
+                    Key={"google_sub": google_sub},
+                    UpdateExpression="SET question_month = :month, question_count = :initial",
+                    ConditionExpression=(
+                        "attribute_not_exists(question_month) OR question_month <> :month"
+                    ),
+                    ExpressionAttributeValues={":month": month, ":initial": 1},
+                )
+                return True
+            except ClientError as e:
+                if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                    raise
+            # Both conditions failed — either limit reached or concurrent month reset.
+            # On first attempt, loop once more (condition 1 should now succeed after reset).
+
+        return False
