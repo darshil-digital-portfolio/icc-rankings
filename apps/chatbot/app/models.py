@@ -25,6 +25,7 @@ class ChatResponse(BaseModel):
     chart: ChartSpec | None = None
     followup_suggestions: list[str] = Field(default_factory=list)
     session_id: str
+    quota_exceeded: bool = False
 
 
 class HistoryMessage(BaseModel):
