@@ -56,4 +56,5 @@ infrastructure/terraform/.terraform.lock.hcl
 
 # ─── Claude Code ──────────────────────────────────────────────────────────────
 .claude
+.playwright-mcp/
 mongodb-compass*.deb
