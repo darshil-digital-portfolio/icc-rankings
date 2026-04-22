@@ -3,15 +3,16 @@
   "id": "icc-rankings",
   "title": "ICC Rankings",
   "category": "AI Agent",
-  "description": "Full-stack ICC cricket points tracker covering 1973–2025, with an AI chatbot that answers natural language questions over live tournament data.",
-  "long_description": "ICC Rankings tracks cumulative team points across every ICC format — Men's and Women's World Cups, T20s, Test Championship, and age-group events from 1973 to 2025. A Rust/Axum API serves the historical data; a Next.js frontend renders rankings, team breakdowns, and event pages. The centrepiece is Twelfth Man, an AI chatbot built on LangGraph and Claude that routes natural language queries through a multi-node agent: classifying intent, running read-only SQL, executing sandboxed Pandas analytics, and formatting the response with optional inline charts.",
+  "description": "Full-stack ICC cricket points tracker covering 1973–2025, with a Google-authenticated AI chatbot that answers natural language questions over live tournament data.",
+  "long_description": "ICC Rankings tracks cumulative team points across every ICC format — Men's and Women's World Cups, T20s, Test Championship, and age-group events from 1973 to 2025. A Rust/Axum API serves the historical data; a Next.js frontend renders rankings, team breakdowns, and event pages. Authentication is handled via Google OAuth (NextAuth), with JWT claims carrying role and new-user state so the chatbot delivers personalised sessions. The centrepiece is Twelfth Man, an AI chatbot built on LangGraph and Claude that routes natural language queries through a multi-node agent: classifying intent, running read-only SQL, executing sandboxed Pandas analytics, and formatting the response with optional inline charts.",
   "status": "online",
   "date": "2026-02",
   "featured": false,
-  "tags": ["LangGraph", "Claude API", "Next.js", "Rust", "FastAPI", "PostgreSQL", "MongoDB", "Recharts"],
+  "tags": ["LangGraph", "Claude API", "Next.js", "Rust", "FastAPI", "PostgreSQL", "MongoDB", "Auth"],
   "highlights": [
     "6-node LangGraph agent: Router classifies intent and branches to SQL Agent, Analytics, Greeting, or Off-topic nodes before Formatter",
     "Rust/Axum API auto-seeds 52 years of ICC tournament data (1973–2025) across 5 formats on first boot",
+    "Google OAuth via NextAuth — JWT carries is_admin and is_new_user claims, enabling per-user chat history isolation in MongoDB",
     "Read-only PostgreSQL guardrails + sandboxed Pandas code execution keep the chatbot safe against injection and runaway queries"
   ],
   "metrics": [
@@ -23,20 +24,20 @@
       "type": "agent-workflow",
       "title": "Twelfth Man LangGraph Query Flow",
       "format": "mermaid",
-      "content": "graph TD\n    MSG[User Message] --> ROUTER[Router\\nHaiku intent classifier]\n    ROUTER -->|sql_query| SQL[SQL Agent\\nSonnet]\n    ROUTER -->|analytics| ANA[Analytics\\nSonnet + Pandas]\n    ROUTER -->|greeting| GREET[Greeting]\n    ROUTER -->|off_topic| OT[Off Topic]\n    ROUTER -->|clarification| DONE([END])\n    SQL --> FMT[Formatter\\nHaiku]\n    ANA --> FMT\n    FMT --> RESP([Response])\n    GREET --> RESP\n    OT --> RESP"
+      "content": "graph TD\n    MSG([User Message]) --> ROUTER{Router\\nHaiku}\n    ROUTER -->|sql_query| SQL[SQL Agent\\nSonnet]\n    ROUTER -->|analytics| ANA[Analytics\\nSonnet + Pandas]\n    ROUTER -->|greeting| GREET[Greeting]\n    ROUTER -->|off_topic| OT[Off Topic]\n    ROUTER -->|clarification| END([END])\n    SQL --> FMT[Formatter\\nHaiku]\n    ANA --> FMT\n    FMT --> RESP([Response])\n    GREET --> RESP\n    OT --> RESP\n    classDef router fill:#7e22ce,color:#fff,stroke:#3b0764\n    classDef agent fill:#1d4ed8,color:#fff,stroke:#1e3a8a\n    classDef formatter fill:#065f46,color:#fff,stroke:#064e3b\n    classDef terminal fill:#374151,color:#fff,stroke:#1f2937\n    class ROUTER router\n    class SQL,ANA agent\n    class FMT formatter\n    class MSG,RESP,END,GREET,OT terminal"
     },
     {
       "type": "system-architecture",
       "title": "ICC Rankings System Architecture",
       "format": "mermaid",
-      "content": "graph TD\n    Browser[User Browser] --> Web[Next.js 14\\nFrontend :5237]\n    Web --> API[Rust / Axum API\\n:7429]\n    Web --> Bot[Twelfth Man Chatbot\\nFastAPI + LangGraph :8100]\n    API --> PG[(PostgreSQL\\nICC historical data)]\n    Bot --> PG\n    Bot --> Mongo[(MongoDB\\nChat history)]\n    Bot --> Claude[Claude API\\nHaiku + Sonnet]\n    API --> Lambda[AWS Lambda\\nECR container]\n    Bot --> Lambda"
+      "content": "graph TD\n    subgraph Frontend\n        Browser[User Browser] --> Web[Next.js 14\\n:5237]\n    end\n    subgraph Backend\n        Web --> API[Rust / Axum API\\n:7429]\n        Web --> Bot[Twelfth Man Chatbot\\nFastAPI + LangGraph :8100]\n    end\n    subgraph Data\n        API --> PG[(PostgreSQL\\nICC historical data)]\n        Bot --> PG\n        Bot --> Mongo[(MongoDB\\nChat history)]\n    end\n    subgraph External\n        Bot --> Claude[Claude API\\nHaiku + Sonnet]\n        API --> Lambda[AWS Lambda\\nECR container]\n        Bot --> Lambda\n    end\n    classDef frontend fill:#7e22ce,color:#fff,stroke:#3b0764\n    classDef service fill:#1d4ed8,color:#fff,stroke:#1e3a8a\n    classDef data fill:#065f46,color:#fff,stroke:#064e3b\n    classDef external fill:#92400e,color:#fff,stroke:#78350f\n    class Browser,Web frontend\n    class API,Bot service\n    class PG,Mongo data\n    class Claude,Lambda external"
     }
   ],
   "links": {
     "github": "https://github.com/darshil-digital-portfolio/icc-rankings",
-    "live": null,
+    "live": "https://icc-rankings.darshil-ai.com",
     "demo_video": null
   },
-  "thumbnail": null,
+  "thumbnail": "docs/icc-rankings-homepage.png",
   "last_updated": "2026-04-22"
 }
