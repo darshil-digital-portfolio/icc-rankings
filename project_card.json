@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "id": "icc-rankings",
+  "title": "ICC Rankings",
+  "category": "AI Agent",
+  "description": "Full-stack ICC cricket points tracker covering 1973–2025, with an AI chatbot that answers natural language questions over live tournament data.",
+  "long_description": "ICC Rankings tracks cumulative team points across every ICC format — Men's and Women's World Cups, T20s, Test Championship, and age-group events from 1973 to 2025. A Rust/Axum API serves the historical data; a Next.js frontend renders rankings, team breakdowns, and event pages. The centrepiece is Twelfth Man, an AI chatbot built on LangGraph and Claude that routes natural language queries through a multi-node agent: classifying intent, running read-only SQL, executing sandboxed Pandas analytics, and formatting the response with optional inline charts.",
+  "status": "online",
+  "date": "2026-02",
+  "featured": false,
+  "tags": ["LangGraph", "Claude API", "Next.js", "Rust", "FastAPI", "PostgreSQL", "MongoDB", "Recharts"],
+  "highlights": [
+    "6-node LangGraph agent: Router classifies intent and branches to SQL Agent, Analytics, Greeting, or Off-topic nodes before Formatter",
+    "Rust/Axum API auto-seeds 52 years of ICC tournament data (1973–2025) across 5 formats on first boot",
+    "Read-only PostgreSQL guardrails + sandboxed Pandas code execution keep the chatbot safe against injection and runaway queries"
+  ],
+  "metrics": [
+    { "label": "160 pytest tests across 13 test files", "icon": "code" },
+    { "label": "3-language stack: TypeScript · Rust · Python", "icon": "layers" }
+  ],
+  "diagrams": [
+    {
+      "type": "agent-workflow",
+      "title": "Twelfth Man LangGraph Query Flow",
+      "format": "mermaid",
+      "content": "graph TD\n    MSG[User Message] --> ROUTER[Router\\nHaiku intent classifier]\n    ROUTER -->|sql_query| SQL[SQL Agent\\nSonnet]\n    ROUTER -->|analytics| ANA[Analytics\\nSonnet + Pandas]\n    ROUTER -->|greeting| GREET[Greeting]\n    ROUTER -->|off_topic| OT[Off Topic]\n    ROUTER -->|clarification| DONE([END])\n    SQL --> FMT[Formatter\\nHaiku]\n    ANA --> FMT\n    FMT --> RESP([Response])\n    GREET --> RESP\n    OT --> RESP"
+    },
+    {
+      "type": "system-architecture",
+      "title": "ICC Rankings System Architecture",
+      "format": "mermaid",
+      "content": "graph TD\n    Browser[User Browser] --> Web[Next.js 14\\nFrontend :5237]\n    Web --> API[Rust / Axum API\\n:7429]\n    Web --> Bot[Twelfth Man Chatbot\\nFastAPI + LangGraph :8100]\n    API --> PG[(PostgreSQL\\nICC historical data)]\n    Bot --> PG\n    Bot --> Mongo[(MongoDB\\nChat history)]\n    Bot --> Claude[Claude API\\nHaiku + Sonnet]\n    API --> Lambda[AWS Lambda\\nECR container]\n    Bot --> Lambda"
+    }
+  ],
+  "links": {
+    "github": "https://github.com/darshil-digital-portfolio/icc-rankings",
+    "live": null,
+    "demo_video": null
+  },
+  "thumbnail": null,
+  "last_updated": "2026-04-22"
+}
