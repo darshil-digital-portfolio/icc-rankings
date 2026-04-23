@@ -1,24 +1,53 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "id": "icc-rankings",
   "title": "ICC Rankings",
   "category": "AI Agent",
+  "industry": "sports-analytics",
   "description": "Full-stack ICC cricket points tracker covering 1973–2025, with a Google-authenticated AI chatbot that answers natural language questions over live tournament data.",
-  "long_description": "ICC Rankings tracks cumulative team points across every ICC format — Men's and Women's World Cups, T20s, Test Championship, and age-group events from 1973 to 2025. A Rust/Axum API serves the historical data; a Next.js frontend renders rankings, team breakdowns, and event pages. Authentication is handled via Google OAuth (NextAuth), with JWT claims carrying role and new-user state so the chatbot delivers personalised sessions. The centrepiece is Twelfth Man, an AI chatbot built on LangGraph and Claude that routes natural language queries through a multi-node agent: classifying intent, running read-only SQL, executing sandboxed Pandas analytics, and formatting the response with optional inline charts.",
+  "long_description": "ICC Rankings tracks cumulative team points across every ICC format — Men's and Women's World Cups, T20s, Test Championship, and age-group events from 1973 to 2025. A Rust/Axum API serves the historical data; a Next.js frontend renders rankings, team breakdowns, and event pages. Authentication is handled via Google OAuth (NextAuth), with JWT claims carrying role and new-user state. The centrepiece is Twelfth Man, an AI chatbot built on LangGraph and Claude that routes natural language queries through a multi-node agent: classifying intent, running read-only SQL, executing sandboxed Pandas analytics, and formatting the response with optional inline charts. In production, both the API and chatbot run as containerised AWS Lambda functions; DynamoDB replaces MongoDB for chat history and per-user monthly question quotas.",
+  "architecture_notes": "DynamoDB was chosen over MongoDB for production to eliminate the need for a persistent server in a serverless Lambda deployment — TTL-based auto-expiry handles 90-day chat retention without a cleanup job. Two separate Lambda functions (API + chatbot) are deployed from ECR images managed by Terraform, keeping infrastructure reproducible and idle costs at zero.",
   "status": "online",
-  "date": "2026-02",
+  "timeline": {
+    "started": "2026-02",
+    "completed": "2026-04",
+    "milestones": [
+      { "date": "2026-03", "label": "Added Twelfth Man AI chatbot: LangGraph + Claude API with SQL and analytics agents" },
+      { "date": "2026-03", "label": "Added Google OAuth authentication with per-user JWT claims and chat history isolation" },
+      { "date": "2026-04", "label": "Migrated production storage from MongoDB to DynamoDB for serverless-compatible persistence" },
+      { "date": "2026-04", "label": "Added per-user monthly question quota (30/month) with atomic DynamoDB counters and graceful in-chat messaging" }
+    ]
+  },
   "featured": false,
-  "tags": ["LangGraph", "Claude API", "Next.js", "Rust", "FastAPI", "PostgreSQL", "MongoDB", "Auth"],
+  "tags": [
+    "TypeScript",
+    "Rust",
+    "Python",
+    "Next.js",
+    "FastAPI",
+    "LangGraph",
+    "PostgreSQL",
+    "auth:google-oauth",
+    "infra:aws-lambda",
+    "infra:ecr",
+    "infra:aws-dynamodb",
+    "infra:iac",
+    "llm:claude-sonnet",
+    "llm:claude-haiku"
+  ],
   "highlights": [
     "6-node LangGraph agent: Router classifies intent and branches to SQL Agent, Analytics, Greeting, or Off-topic nodes before Formatter",
     "Rust/Axum API auto-seeds 52 years of ICC tournament data (1973–2025) across 5 formats on first boot",
-    "Google OAuth via NextAuth — JWT carries is_admin and is_new_user claims, enabling per-user chat history isolation in MongoDB",
-    "Read-only PostgreSQL guardrails + sandboxed Pandas code execution keep the chatbot safe against injection and runaway queries"
+    "Google OAuth via NextAuth — JWT carries is_admin and is_new_user claims, enabling per-user chat history isolation",
+    "DynamoDB replaces MongoDB in production: atomic monthly counters enforce a 30-question-per-user quota with graceful in-chat messaging",
+    "Read-only PostgreSQL guardrails + sandboxed Pandas code execution keep the chatbot safe against injection and runaway queries",
+    "Full Terraform IaC: two ECR-backed Lambda functions (API + chatbot) deployed to AWS ap-south-1 with zero idle cost"
   ],
   "metrics": [
     { "label": "160 pytest tests across 13 test files", "icon": "code" },
     { "label": "3-language stack: TypeScript · Rust · Python", "icon": "layers" }
   ],
+  "featured_diagram": "agent-workflow",
   "diagrams": [
     {
       "type": "agent-workflow",
@@ -30,7 +59,7 @@
       "type": "system-architecture",
       "title": "ICC Rankings System Architecture",
       "format": "mermaid",
-      "content": "graph TD\n    subgraph Frontend\n        Browser[User Browser] --> Web[Next.js 14\\n:5237]\n    end\n    subgraph Backend\n        Web --> API[Rust / Axum API\\n:7429]\n        Web --> Bot[Twelfth Man Chatbot\\nFastAPI + LangGraph :8100]\n    end\n    subgraph Data\n        API --> PG[(PostgreSQL\\nICC historical data)]\n        Bot --> PG\n        Bot --> Mongo[(MongoDB\\nChat history)]\n    end\n    subgraph External\n        Bot --> Claude[Claude API\\nHaiku + Sonnet]\n        API --> Lambda[AWS Lambda\\nECR container]\n        Bot --> Lambda\n    end\n    classDef frontend fill:#7e22ce,color:#fff,stroke:#3b0764\n    classDef service fill:#1d4ed8,color:#fff,stroke:#1e3a8a\n    classDef data fill:#065f46,color:#fff,stroke:#064e3b\n    classDef external fill:#92400e,color:#fff,stroke:#78350f\n    class Browser,Web frontend\n    class API,Bot service\n    class PG,Mongo data\n    class Claude,Lambda external"
+      "content": "graph TD\n    subgraph Frontend\n        Browser[User Browser] --> Web[Next.js 14\\n:5237]\n    end\n    subgraph Backend\n        Web --> API[Rust / Axum API\\nAWS Lambda]\n        Web --> Bot[Twelfth Man Chatbot\\nFastAPI + LangGraph\\nAWS Lambda]\n    end\n    subgraph Data\n        API --> PG[(PostgreSQL\\nICC historical data)]\n        Bot --> PG\n        Bot --> DDB[(DynamoDB\\nChat history + Quota)]\n    end\n    subgraph External\n        Bot --> Claude[Claude API\\nHaiku + Sonnet]\n    end\n    classDef frontend fill:#7e22ce,color:#fff,stroke:#3b0764\n    classDef service fill:#1d4ed8,color:#fff,stroke:#1e3a8a\n    classDef data fill:#065f46,color:#fff,stroke:#064e3b\n    classDef external fill:#92400e,color:#fff,stroke:#78350f\n    class Browser,Web frontend\n    class API,Bot service\n    class PG,DDB data\n    class Claude external"
     }
   ],
   "links": {
@@ -39,5 +68,5 @@
     "demo_video": null
   },
   "thumbnail": "https://project-cards-for-portfolio.s3.ap-south-1.amazonaws.com/projects/icc-rankings/thumbnail.png",
-  "last_updated": "2026-04-22"
+  "last_updated": "2026-04-23"
 }
