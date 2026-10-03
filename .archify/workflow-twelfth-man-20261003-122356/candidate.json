@@ -1,0 +1,219 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Twelfth Man — LangGraph Query Flow",
+    "output": ".archify/workflow-twelfth-man-20261003-122356/twelfth-man.html",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "api",
+      "label": "FastAPI /chat"
+    },
+    {
+      "id": "agent",
+      "label": "LangGraph · data questions"
+    },
+    {
+      "id": "other",
+      "label": "LangGraph · other intents"
+    }
+  ],
+  "mainPath": [
+    "question",
+    "quota",
+    "router",
+    "sql_agent",
+    "formatter",
+    "reply"
+  ],
+  "nodes": [
+    {
+      "id": "question",
+      "lane": "api",
+      "col": 0,
+      "type": "external",
+      "label": "User question",
+      "sublabel": "POST /chat",
+      "width": 132,
+      "icon": "person"
+    },
+    {
+      "id": "quota",
+      "lane": "api",
+      "col": 1,
+      "type": "security",
+      "label": "Quota check",
+      "sublabel": "30 per user / month",
+      "width": 140
+    },
+    {
+      "id": "reply",
+      "lane": "api",
+      "col": 5,
+      "type": "frontend",
+      "label": "Chat reply",
+      "sublabel": "text + chart + follow-ups",
+      "width": 150
+    },
+    {
+      "id": "router",
+      "lane": "agent",
+      "col": 2,
+      "type": "backend",
+      "label": "Router",
+      "sublabel": "classify intent",
+      "width": 132,
+      "brand": {
+        "url": "https://www.langchain.com/",
+        "sha256": "0c60295f8003df255890bff79d9b006d5b3459f90e02c31c850e05b4365c9029"
+      }
+    },
+    {
+      "id": "sql_agent",
+      "lane": "agent",
+      "col": 3,
+      "type": "backend",
+      "label": "SQL Agent",
+      "sublabel": "generate + run SELECT",
+      "tag": "validated, read-only",
+      "width": 150
+    },
+    {
+      "id": "formatter",
+      "lane": "agent",
+      "col": 4,
+      "type": "backend",
+      "label": "Formatter",
+      "sublabel": "answer + chart spec",
+      "width": 140
+    },
+    {
+      "id": "analytics",
+      "lane": "other",
+      "col": 3,
+      "type": "backend",
+      "label": "Analytics",
+      "sublabel": "SQL + Pandas code",
+      "tag": "sandboxed exec",
+      "width": 150,
+      "brand": "python"
+    },
+    {
+      "id": "canned",
+      "lane": "other",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Greeting / Off-topic",
+      "sublabel": "fixed replies, no LLM",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "question-quota",
+      "from": "question",
+      "to": "quota"
+    },
+    {
+      "id": "quota-router",
+      "from": "quota",
+      "to": "router",
+      "label": "allowed",
+      "variant": "emphasis"
+    },
+    {
+      "id": "quota-exceeded",
+      "from": "quota",
+      "to": "reply",
+      "label": "limit reached",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "router-sql",
+      "from": "router",
+      "to": "sql_agent",
+      "label": "sql_query",
+      "variant": "emphasis"
+    },
+    {
+      "id": "router-analytics",
+      "from": "router",
+      "to": "analytics",
+      "label": "analytics",
+      "role": "branch"
+    },
+    {
+      "id": "router-canned",
+      "from": "router",
+      "to": "canned",
+      "label": "greeting / off_topic",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "router-clarify",
+      "from": "router",
+      "to": "reply",
+      "label": "clarification",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "sql-formatter",
+      "from": "sql_agent",
+      "to": "formatter",
+      "variant": "emphasis"
+    },
+    {
+      "id": "analytics-formatter",
+      "from": "analytics",
+      "to": "formatter",
+      "role": "branch"
+    },
+    {
+      "id": "formatter-reply",
+      "from": "formatter",
+      "to": "reply",
+      "variant": "emphasis"
+    },
+    {
+      "id": "canned-reply",
+      "from": "canned",
+      "to": "reply",
+      "variant": "dashed",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Routing",
+      "items": [
+        "One LLM call classifies each message into five intents",
+        "Clarification questions return straight from the Router",
+        "Greeting and off-topic replies cost no data access"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Guardrails",
+      "items": [
+        "Single SELECT or WITH statements only, no comments",
+        "Row limit enforced, then run in a read-only transaction with a timeout",
+        "Pandas code runs with restricted builtins"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Output",
+      "items": [
+        "Formatter turns rows or analysis into prose",
+        "Optional chart spec is checked before it is returned",
+        "Errors from SQL or analytics also go through the Formatter"
+      ]
+    }
+  ]
+}

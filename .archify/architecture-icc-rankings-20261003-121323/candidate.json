@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ICC Rankings — Production Architecture",
+    "output": ".archify/architecture-icc-rankings-20261003-121323/icc-rankings.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "Browser",
+      "pos": [
+        40,
+        210
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "icon": "person"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Next.js Web",
+      "sublabel": "App Router + NextAuth",
+      "tag": "Vercel",
+      "pos": [
+        260,
+        210
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "brand": "next-js"
+    },
+    {
+      "id": "google",
+      "type": "security",
+      "label": "Google OAuth",
+      "sublabel": "JWT session, 7 days",
+      "pos": [
+        260,
+        380
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "brand": {
+        "url": "https://www.google.com/",
+        "sha256": "6da5620880159634213e197fafca1dde0272153be3e4590818533fab8d040770"
+      }
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Rankings API",
+      "sublabel": "Rust / Axum",
+      "tag": "Lambda",
+      "pos": [
+        560,
+        40
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "brand": "rust"
+    },
+    {
+      "id": "chatbot",
+      "type": "backend",
+      "label": "Twelfth Man Chatbot",
+      "sublabel": "FastAPI + LangGraph",
+      "tag": "Lambda",
+      "pos": [
+        560,
+        210
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "brand": "fastapi"
+    },
+    {
+      "id": "neon",
+      "type": "database",
+      "label": "Neon Postgres",
+      "sublabel": "teams, events, results",
+      "pos": [
+        880,
+        40
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "brand": "neon"
+    },
+    {
+      "id": "dynamo",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "conversations + users",
+      "pos": [
+        880,
+        210
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      }
+    },
+    {
+      "id": "claude",
+      "type": "external",
+      "label": "Claude API",
+      "sublabel": "Anthropic",
+      "pos": [
+        560,
+        380
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "brand": "claude"
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitor-to-web",
+      "from": "visitor",
+      "to": "web",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-to-chatbot",
+      "from": "web",
+      "to": "chatbot",
+      "label": "POST /chat",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-to-api",
+      "from": "web",
+      "to": "api",
+      "label": "GET /api/v1"
+    },
+    {
+      "id": "web-to-google",
+      "from": "web",
+      "to": "google",
+      "label": "OAuth sign-in",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-neon",
+      "from": "api",
+      "to": "neon",
+      "label": "SQL (sqlx)"
+    },
+    {
+      "id": "chatbot-to-neon",
+      "from": "chatbot",
+      "to": "neon",
+      "label": "read-only SQL",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "chatbot-to-dynamo",
+      "from": "chatbot",
+      "to": "dynamo",
+      "label": "history + quota"
+    },
+    {
+      "id": "chatbot-to-claude",
+      "from": "chatbot",
+      "to": "claude",
+      "label": "LLM calls",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "AI chatbot",
+      "items": [
+        "LangGraph: Router → SQL Agent, Analytics, Greeting or Off-topic → Formatter",
+        "Generated SQL is validated, then run read-only",
+        "30 questions per user per month, counted atomically in DynamoDB"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Serverless",
+      "items": [
+        "Two container-image Lambdas behind public Function URLs",
+        "Images in ECR, infrastructure in Terraform",
+        "DynamoDB TTL expires old chat history"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Auth",
+      "items": [
+        "Google OAuth via NextAuth with JWT sessions",
+        "/chat and /admin are gated by middleware",
+        "Web-to-chatbot user lookup uses a service token"
+      ]
+    }
+  ]
+}

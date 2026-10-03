@@ -58,3 +58,8 @@ infrastructure/terraform/.terraform.lock.hcl
 .claude
 .playwright-mcp/
 mongodb-compass*.deb
+
+# ─── archify ────────────────────────────────────────────────────────────────
+# Keep the diagram sources (candidate.json); rendered HTML and receipts are build output.
+.archify/*/*
+!.archify/*/candidate.json
