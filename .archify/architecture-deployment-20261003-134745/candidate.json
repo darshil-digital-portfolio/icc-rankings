@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ICC Rankings — Deployment Topology",
+    "output": ".archify/architecture-deployment-20261003-134745/deployment.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "Browser",
+      "icon": "person",
+      "pos": [
+        30,
+        230
+      ],
+      "size": [
+        120,
+        60
+      ]
+    },
+    {
+      "id": "vercel",
+      "type": "frontend",
+      "label": "Vercel",
+      "sublabel": "Next.js web app",
+      "brand": "vercel",
+      "pos": [
+        210,
+        230
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "api_fn",
+      "type": "backend",
+      "label": "API Lambda",
+      "sublabel": "Rust image, 256 MB",
+      "tag": "Function URL",
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      },
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "ecr",
+      "type": "cloud",
+      "label": "ECR",
+      "sublabel": "2 repos, scan on push",
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      },
+      "pos": [
+        450,
+        230
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "chat_fn",
+      "type": "backend",
+      "label": "Chatbot Lambda",
+      "sublabel": "Python image, 1024 MB",
+      "tag": "Function URL",
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      },
+      "pos": [
+        450,
+        400
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "dynamo",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "2 tables, on-demand, TTL",
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      },
+      "pos": [
+        450,
+        570
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "deploy",
+      "type": "external",
+      "label": "Deploy scripts",
+      "sublabel": "docker build + push",
+      "brand": "docker",
+      "pos": [
+        690,
+        230
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "neon",
+      "type": "database",
+      "label": "Neon Postgres",
+      "sublabel": "serverless",
+      "brand": "neon",
+      "pos": [
+        900,
+        62
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "claude",
+      "type": "external",
+      "label": "Claude API",
+      "sublabel": "Anthropic",
+      "brand": "claude",
+      "pos": [
+        830,
+        570
+      ],
+      "size": [
+        150,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "AWS ap-south-1, provisioned by Terraform",
+      "wraps": [
+        "api_fn",
+        "ecr",
+        "chat_fn",
+        "dynamo"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitor-vercel",
+      "from": "visitor",
+      "to": "vercel",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "vercel-api",
+      "from": "vercel",
+      "to": "api_fn",
+      "label": "GET /api/v1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "vercel-chat",
+      "from": "vercel",
+      "to": "chat_fn",
+      "label": "POST /chat",
+      "variant": "emphasis"
+    },
+    {
+      "id": "deploy-ecr",
+      "from": "deploy",
+      "to": "ecr",
+      "label": "push",
+      "variant": "dashed"
+    },
+    {
+      "id": "ecr-api",
+      "from": "ecr",
+      "to": "api_fn",
+      "label": "image",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "ecr-chat",
+      "from": "ecr",
+      "to": "chat_fn",
+      "label": "image",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-neon",
+      "from": "api_fn",
+      "to": "neon",
+      "label": "SQL"
+    },
+    {
+      "id": "chat-neon",
+      "from": "chat_fn",
+      "to": "neon",
+      "label": "read-only SQL",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          975,
+          432
+        ]
+      ]
+    },
+    {
+      "id": "chat-claude",
+      "from": "chat_fn",
+      "to": "claude",
+      "label": "LLM calls",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          905,
+          432
+        ]
+      ]
+    },
+    {
+      "id": "chat-dynamo",
+      "from": "chat_fn",
+      "to": "dynamo",
+      "label": "history + quota",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Infrastructure as code",
+      "items": [
+        "Terraform defines ECR, both Lambdas, their Function URLs, DynamoDB and IAM",
+        "Deploy scripts build the image, push it and update the function code"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Scale to zero",
+      "items": [
+        "Lambda, on-demand DynamoDB and serverless Postgres all cost nothing when idle",
+        "ECR keeps only the latest image"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Access",
+      "items": [
+        "No VPC, subnets or security groups: both Lambdas sit behind public Function URLs",
+        "Chatbot role can reach only its two DynamoDB tables; API role only writes logs",
+        "Chatbot connects to Postgres with a read-only credential"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Twelfth Man — Chat Request Sequence",
+    "output": ".archify/sequence-chat-request-20261003-122356/chat-request.html",
+    "viewBox": [
+      1080,
+      660
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Chat UI",
+      "sublabel": "signed-in browser",
+      "brand": "next-js"
+    },
+    {
+      "id": "chatbot",
+      "type": "backend",
+      "label": "Chatbot API",
+      "sublabel": "FastAPI on Lambda",
+      "brand": "fastapi"
+    },
+    {
+      "id": "dynamo",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "history + quota",
+      "brand": {
+        "url": "https://aws.amazon.com/",
+        "sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403"
+      }
+    },
+    {
+      "id": "graph",
+      "type": "backend",
+      "label": "LangGraph",
+      "sublabel": "agent graph",
+      "brand": {
+        "url": "https://www.langchain.com/",
+        "sha256": "0c60295f8003df255890bff79d9b006d5b3459f90e02c31c850e05b4365c9029"
+      }
+    },
+    {
+      "id": "claude",
+      "type": "external",
+      "label": "Claude API",
+      "sublabel": "Anthropic",
+      "brand": "claude"
+    },
+    {
+      "id": "neon",
+      "type": "database",
+      "label": "Neon Postgres",
+      "sublabel": "read-only role",
+      "brand": "neon"
+    }
+  ],
+  "segments": [
+    {
+      "from": 152,
+      "to": 262,
+      "label": "Intake + quota"
+    },
+    {
+      "from": 272,
+      "to": 466,
+      "label": "Agent run"
+    },
+    {
+      "from": 476,
+      "to": 558,
+      "label": "Persist + reply"
+    }
+  ],
+  "messages": [
+    {
+      "id": "post-chat",
+      "from": "browser",
+      "to": "chatbot",
+      "y": 165,
+      "label": "POST /chat",
+      "variant": "emphasis"
+    },
+    {
+      "id": "save-user-msg",
+      "from": "chatbot",
+      "to": "dynamo",
+      "y": 193,
+      "label": "save user message"
+    },
+    {
+      "id": "quota-check",
+      "from": "chatbot",
+      "to": "dynamo",
+      "y": 221,
+      "label": "check + increment quota",
+      "variant": "security"
+    },
+    {
+      "id": "quota-ok",
+      "from": "dynamo",
+      "to": "chatbot",
+      "y": 249,
+      "label": "allowed",
+      "variant": "return",
+      "note": "Over the limit: reply with an apology and quota_exceeded"
+    },
+    {
+      "id": "load-history",
+      "from": "chatbot",
+      "to": "dynamo",
+      "y": 285,
+      "label": "load recent messages"
+    },
+    {
+      "id": "invoke-graph",
+      "from": "chatbot",
+      "to": "graph",
+      "y": 313,
+      "label": "ainvoke(history)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "classify",
+      "from": "graph",
+      "to": "claude",
+      "y": 341,
+      "label": "classify intent"
+    },
+    {
+      "id": "gen-sql",
+      "from": "graph",
+      "to": "claude",
+      "y": 369,
+      "label": "generate SQL"
+    },
+    {
+      "id": "run-sql",
+      "from": "graph",
+      "to": "neon",
+      "y": 397,
+      "label": "validated SELECT",
+      "variant": "security"
+    },
+    {
+      "id": "rows",
+      "from": "neon",
+      "to": "graph",
+      "y": 425,
+      "label": "rows",
+      "variant": "return"
+    },
+    {
+      "id": "format",
+      "from": "graph",
+      "to": "claude",
+      "y": 453,
+      "label": "format answer + chart"
+    },
+    {
+      "id": "graph-result",
+      "from": "graph",
+      "to": "chatbot",
+      "y": 489,
+      "label": "text, chart, follow-ups",
+      "variant": "return"
+    },
+    {
+      "id": "save-reply",
+      "from": "chatbot",
+      "to": "dynamo",
+      "y": 517,
+      "label": "save assistant message",
+      "variant": "default"
+    },
+    {
+      "id": "response",
+      "from": "chatbot",
+      "to": "browser",
+      "y": 545,
+      "label": "ChatResponse",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "chatbot",
+      "from": 165,
+      "to": 551,
+      "type": "backend"
+    },
+    {
+      "participant": "graph",
+      "from": 313,
+      "to": 495,
+      "type": "backend"
+    },
+    {
+      "participant": "neon",
+      "from": 392,
+      "to": 431,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Cost control",
+      "items": [
+        "The quota is checked before any LLM call",
+        "The counter is a conditional DynamoDB update, so parallel requests cannot overspend"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "SQL path shown",
+      "items": [
+        "This is the sql_query intent, the most common path",
+        "Analytics adds a sandboxed Pandas step before formatting"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "State",
+      "items": [
+        "The Lambda is stateless; history lives in DynamoDB",
+        "Recent messages are reloaded as context on every request"
+      ]
+    }
+  ]
+}
